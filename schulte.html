@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concentration Trainer</title>
+  <!-- Original Version 1 Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@700;800;900&display=swap" rel="stylesheet">
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-app: #09090b;
+      --bg-bar: #18181b;
+      --border-bar: #27272a;
+      --text-main: #fafafa;
+      --text-muted: #a1a1aa;
+      --accent: #16a34a;
+      --accent-hover: #15803d;
+      --danger: #dc2626;
+      --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Safari/iOS text input fix */
+    input, textarea, select {
+      user-select: text;
+      -webkit-user-select: text;
+      font-family: var(--font-sans);
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP CONTROL BAR */
+    .topbar {
+      min-height: 60px;
+      background: var(--bg-bar);
+      border-bottom: 1px solid var(--border-bar);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .bar-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .brand {
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+      margin-right: 4px;
+      white-space: nowrap;
+    }
+
+    /* SEGMENTED SELECTORS & BUTTONS */
+    .seg-group {
+      display: flex;
+      background: #09090b;
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid #27272a;
+    }
+
+    .seg-btn {
+      font-family: var(--font-sans);
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .seg-btn.active {
+      background: #fafafa;
+      color: #09090b;
+    }
+
+    .seg-btn:hover:not(.active) {
+      color: #ffffff;
+    }
+
+    .btn {
+      font-family: var(--font-sans);
+      background: #27272a;
+      color: #fafafa;
+      border: 1px solid #3f3f46;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: #3f3f46;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #ffffff;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    /* HUD METRICS */
+    .hud {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #09090b;
+      padding: 4px 12px;
+      border-radius: 10px;
+      border: 1px solid #27272a;
+    }
+
+    .hud-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .hud-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hud-value {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      min-width: 68px;
+    }
+
+    .hud-target {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 800;
+      color: #4ade80;
+      font-variant-numeric: tabular-nums;
+      min-width: 48px;
+    }
+
+    /* MAIN STAGE & CONTAINER-SCALED BOARD */
+    .stage {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      container-type: size;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .board-container {
+      width: min(calc(100cqw - 24px), calc(100cqh - 24px));
+      height: min(calc(100cqw - 24px), calc(100cqh - 24px));
+      container-type: size;
+      position: relative;
+      background: #000000;
+      border: 4px solid #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    }
+
+    .grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      background: #000000;
+    }
+
+    /* CELL STYLING & B&W THEMES */
+    .cell {
+      font-family: var(--font-sans);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      cursor: pointer;
+      transition: transform 0.06s ease, background-color 0.1s ease;
+      font-variant-numeric: tabular-nums;
+      position: relative;
+    }
+
+    .cell:active {
+      transform: scale(0.96);
+    }
+
+    .theme-classic .cell {
+      background: #ffffff;
+      color: #000000;
+      border: 2px solid #000000;
+    }
+
+    .theme-dark .cell {
+      background: #000000;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+    }
+
+    .theme-checker .cell.even-cell {
+      background: #ffffff;
+      color: #000000;
+      border: 2px solid #000000;
+    }
+    .theme-checker .cell.odd-cell {
+      background: #000000;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+    }
+
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .cell.wrong-flash {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      animation: wrongShake 0.22s ease;
+    }
+
+    .cell.clicked-green {
+      background: #16a34a !important;
+      color: #ffffff !important;
+      border-color: #052e16 !important;
+      animation: none !important;
+    }
+
+    /* OVERLAY ON BOARD */
+    .board-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 9, 11, 0.92);
+      backdrop-filter: blur(6px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      z-index: 5;
+    }
+
+    .board-overlay.hidden {
+      display: none;
+    }
+
+    .overlay-title {
+      font-size: clamp(22px, 6cqmin, 32px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .overlay-sub {
+      color: var(--text-muted);
+      font-size: clamp(12px, 3.2cqmin, 15px);
+      margin-bottom: 20px;
+      max-width: 380px;
+      line-height: 1.45;
+    }
+
+    .overlay-stat {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 8cqmin, 46px);
+      font-weight: 800;
+      color: #4ade80;
+      margin-bottom: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* MODALS */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 540px;
+      max-height: 88dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #27272a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .input {
+      background: #09090b;
+      border: 1px solid #3f3f46;
+      color: #fafafa;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input:focus {
+      border-color: #4ade80;
+    }
+
+    .lb-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .lb-table th {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid #27272a;
+      color: var(--text-muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .lb-table td {
+      padding: 10px;
+      border-bottom: 1px solid #27272a;
+      font-weight: 600;
+    }
+
+    .rank-1 { color: #facc15; font-weight: 900; }
+    .rank-2 { color: #e4e4e7; font-weight: 800; }
+    .rank-3 { color: #d97706; font-weight: 800; }
+
+    .status-msg {
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: #27272a;
+      color: #e4e4e7;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="bar-group">
+      <div class="brand">SCHULTE PRO</div>
+
+      <div class="seg-group" id="gridSelector">
+        <button class="seg-btn" data-size="3">3×3</button>
+        <button class="seg-btn" data-size="4">4×4</button>
+        <button class="seg-btn active" data-size="5">5×5</button>
+        <button class="seg-btn" data-size="6">6×6</button>
+      </div>
+
+      <div class="seg-group" id="modeSelector">
+        <button class="seg-btn active" data-mode="stopwatch" title="Runs until you click all numbers">Stopwatch</button>
+        <button class="seg-btn" data-mode="blitz30" title="Find as many numbers as possible in 30s">30s Blitz</button>
+      </div>
+    </div>
+
+    <div class="bar-group">
+      <div class="hud">
+        <div class="hud-item">
+          <span class="hud-label">Next</span>
+          <span class="hud-target" id="targetDisplay">1/25</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label" id="timerLabel">Time</span>
+          <span class="hud-value" id="timerDisplay">00.00s</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="startBtn">Start</button>
+      <button class="btn" id="restartBtn">Restart</button>
+      <button class="btn btn-danger" id="stopBtn" style="display:none;">Stop</button>
+    </div>
+
+    <div class="bar-group">
+      <button class="btn" id="soundBtn" title="Toggle Sound Effects">🔊 Sound: ON</button>
+      <button class="btn" id="themeBtn" title="Switch Black & White Style">Theme: Classic</button>
+      <button class="btn" id="toppersBtn">🏆 Toppers</button>
+      <button class="btn" id="accountBtn">👤 <span id="accountLabel">Guest</span></button>
+    </div>
+  </header>
+
+  <!-- MAIN GAME BOARD STAGE -->
+  <main class="stage">
+    <div class="board-container">
+      <div id="grid" class="grid theme-classic"></div>
+
+      <div id="boardOverlay" class="board-overlay">
+        <div class="overlay-title" id="overlayTitle">5×5 Ready</div>
+        <div class="overlay-stat" id="overlayStat" style="display:none;">00.00s</div>
+        <div class="overlay-sub" id="overlaySub">Click numbers in ascending order as fast as possible. Positions never repeat consecutively.</div>
+        <button class="btn btn-primary" id="overlayStartBtn" style="padding: 12px 28px; font-size: 16px;">Start Game (Space)</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL 1: TOPPERS LEADERBOARD -->
+  <div class="modal-backdrop" id="toppersModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🏆 Toppers (Best Per Player)</div>
+        <button class="modal-close" data-close="toppersModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <div class="seg-group" id="lbGridSelector">
+            <button class="seg-btn" data-lbsize="3">3×3</button>
+            <button class="seg-btn" data-lbsize="4">4×4</button>
+            <button class="seg-btn active" data-lbsize="5">5×5</button>
+            <button class="seg-btn" data-lbsize="6">6×6</button>
+          </div>
+          <div class="seg-group" id="lbModeSelector">
+            <button class="seg-btn active" data-lbmode="stopwatch">Stopwatch</button>
+            <button class="seg-btn" data-lbmode="blitz30">30s Blitz</button>
+          </div>
+        </div>
+
+        <div id="lbSourceBanner" class="status-msg" style="font-size:12px;">Showing top scores</div>
+
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th id="lbMetricHeader">Time</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="lbTableBody">
+            <tr><td colspan="4" style="text-align:center; color:#a1a1aa;">Loading scores...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: USER ACCOUNT -->
+  <div class="modal-backdrop" id="accountModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">👤 Player Account</div>
+        <button class="modal-close" data-close="accountModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="authStatusMsg" class="status-msg">Sign in or create an account to publish your scores to the global leaderboard.</div>
+
+        <!-- Logged-In View -->
+        <div id="loggedInPanel" style="display:none; flex-direction:column; gap:12px;">
+          <div class="field">
+            <label>Player Name (Displayed on Leaderboard)</label>
+            <input type="text" id="profileNameInput" class="input" maxlength="32" placeholder="Enter display name" />
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" id="saveProfileBtn">Save Name</button>
+            <button class="btn btn-danger" id="logoutBtn">Log Out</button>
+          </div>
+        </div>
+
+        <!-- Logged-Out View -->
+        <div id="loggedOutPanel" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="field">
+            <label>Player Name</label>
+            <input type="text" id="authNameInput" class="input" maxlength="32" placeholder="e.g., Yadu" />
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="authEmailInput" class="input" placeholder="you@example.com" />
+          </div>
+          <div class="field">
+            <label>Password (min 6 chars)</label>
+            <input type="password" id="authPassInput" class="input" placeholder="••••••" />
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" id="loginBtn" style="flex:1; justify-content:center;">Log In</button>
+            <button class="btn" id="signupBtn" style="flex:1; justify-content:center;">Create Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /********************************************************************
+     * 0. GUARDED LOCAL STORAGE HELPERS (Capped at 200 entries)
+     ********************************************************************/
+    const MAX_LOCAL_SCORES = 200;
+
+    function safeStorageGet(key, fallback = null) {
+      try {
+        const val = window.localStorage.getItem(key);
+        return val !== null ? val : fallback;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function safeStorageSet(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch (_) {}
+    }
+
+    function safeStorageRemove(key) {
+      try {
+        window.localStorage.removeItem(key);
+      } catch (_) {}
+    }
+
+    function readLocalScores() {
+      const raw = safeStorageGet("schulte_local_scores", "[]");
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function writeLocalScore(entry) {
+      const scores = readLocalScores();
+      scores.push(entry);
+      const trimmed = scores.length > MAX_LOCAL_SCORES
+        ? scores.slice(scores.length - MAX_LOCAL_SCORES)
+        : scores;
+      safeStorageSet("schulte_local_scores", JSON.stringify(trimmed));
+    }
+
+    /********************************************************************
+     * 1. WEB AUDIO SYNTHESIZER (SOUND EFFECTS FROM VERSION 1)
+     ********************************************************************/
+    let soundEnabled = safeStorageGet("schulte_sound_enabled", "true") !== "false";
+    let audioCtx = null;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type = "sine", duration = 0.08, gainLevel = 0.12, delay = 0) {
+      if (!soundEnabled) return;
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+
+      const start = ctx.currentTime + delay;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(gainLevel, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(start);
+      osc.stop(start + duration);
+    }
+
+    function playStartSound() {
+      playTone(440, "sine", 0.07, 0.1, 0);
+      playTone(660, "sine", 0.11, 0.12, 0.06);
+    }
+
+    function playHitSound(stepIndex, totalSteps) {
+      const progress = stepIndex / Math.max(1, totalSteps);
+      const freq = 480 + Math.round(progress * 380);
+      playTone(freq, "triangle", 0.065, 0.13, 0);
+    }
+
+    function playWrongSound() {
+      playTone(150, "sawtooth", 0.14, 0.11, 0);
+    }
+
+    function playWinSound() {
+      playTone(523.25, "triangle", 0.09, 0.14, 0);
+      playTone(659.25, "triangle", 0.09, 0.14, 0.07);
+      playTone(783.99, "triangle", 0.09, 0.14, 0.14);
+      playTone(1046.5, "triangle", 0.22, 0.16, 0.21);
+    }
+
+    function playTimeoutSound() {
+      playTone(360, "sawtooth", 0.12, 0.11, 0);
+      playTone(220, "sawtooth", 0.22, 0.12, 0.11);
+    }
+
+    function updateSoundButtonUI() {
+      const btn = document.getElementById("soundBtn");
+      if (btn) {
+        btn.textContent = soundEnabled ? "🔊 Sound: ON" : "🔇 Sound: OFF";
+      }
+    }
+
+    /********************************************************************
+     * 2. SUPABASE CONFIGURATION & AUTH STATE SYNC
+     * Paste your Supabase Project URL and Anon Key here:
+     ********************************************************************/
+    const DEFAULT_SUPABASE_URL = "https://hzmellvadxmlfvxlyolb.supabase.co";
+    const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bWVsbHZhZHhtbGZ2eGx5b2xiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NDQyNDcsImV4cCI6MjEwODEyMDI0N30.g7_d6BRF8uRHKTElE3kZGQCJ-3qvzqHSWixjv6xgu2Y";
+
+    let supabaseClient = null;
+    let authSubscription = null;
+    let currentUser = null;
+    let playerName = sanitizeName(safeStorageGet("schulte_player_name", "Guest"));
+
+    function sanitizeName(raw) {
+      const cleaned = String(raw || "").trim().slice(0, 32);
+      return cleaned || "Guest";
+    }
+
+    function initSupabase() {
+      const url = DEFAULT_SUPABASE_URL;
+      const key = DEFAULT_SUPABASE_ANON_KEY;
+
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+        authSubscription = null;
+      }
+
+      if (window.supabase && url && url.startsWith("http") && key && key !== "YOUR_SUPABASE_ANON_KEY") {
+        try {
+          supabaseClient = window.supabase.createClient(url, key);
+          const { data: listener } = supabaseClient.auth.onAuthStateChange((event, session) => {
+            currentUser = session?.user || null;
+            if (currentUser?.user_metadata?.player_name) {
+              playerName = sanitizeName(currentUser.user_metadata.player_name);
+              safeStorageSet("schulte_player_name", playerName);
+            } else if (event === "SIGNED_OUT") {
+              playerName = "Guest";
+              safeStorageRemove("schulte_player_name");
+            }
+            updateAccountUI();
+          });
+          authSubscription = listener?.subscription || null;
+          checkSession();
+        } catch (err) {
+          console.error("Supabase init error:", err);
+          supabaseClient = null;
+          updateAccountUI();
+        }
+      } else {
+        supabaseClient = null;
+        updateAccountUI();
+      }
+    }
+
+    async function checkSession() {
+      if (!supabaseClient) return;
+      try {
+        const { data } = await supabaseClient.auth.getSession();
+        currentUser = data?.session?.user || null;
+        if (currentUser?.user_metadata?.player_name) {
+          playerName = sanitizeName(currentUser.user_metadata.player_name);
+          safeStorageSet("schulte_player_name", playerName);
+        }
+      } catch (e) {
+        console.error("Session check error:", e);
+      }
+      updateAccountUI();
+    }
+
+    function updateAccountUI() {
+      const accountLabel = document.getElementById("accountLabel");
+      const loggedInPanel = document.getElementById("loggedInPanel");
+      const loggedOutPanel = document.getElementById("loggedOutPanel");
+      const statusMsg = document.getElementById("authStatusMsg");
+
+      if (currentUser) {
+        accountLabel.textContent = playerName;
+        loggedInPanel.style.display = "flex";
+        loggedOutPanel.style.display = "none";
+        document.getElementById("profileNameInput").value = playerName;
+        statusMsg.textContent = `Signed in as ${currentUser.email} — Scores automatically sync to Cloud Toppers.`;
+      } else {
+        accountLabel.textContent = playerName;
+        loggedInPanel.style.display = "none";
+        loggedOutPanel.style.display = "flex";
+        statusMsg.textContent = supabaseClient
+          ? "Guest Mode: Scores save locally. Sign in or create an account to publish to the Cloud Toppers leaderboard."
+          : "Offline/Local Mode: Scores are saved to this device.";
+      }
+    }
+
+    /********************************************************************
+     * 3. DERANGEMENT ENGINE WITH SATTOLO'S O(N) FALLBACK
+     ********************************************************************/
+    const prevBoardBySize = {};
+
+    function sattoloDerangementRelativeTo(prev) {
+      const n = prev.length;
+      const idx = Array.from({ length: n }, (_, i) => i);
+      for (let i = n - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * i);
+        [idx[i], idx[j]] = [idx[j], idx[i]];
+      }
+      return idx.map(k => prev[k]);
+    }
+
+    function generateDerangement(totalCells) {
+      const prev = prevBoardBySize[totalCells] || null;
+      const nums = Array.from({ length: totalCells }, (_, i) => i + 1);
+
+      if (!prev || prev.length !== totalCells) {
+        for (let i = totalCells - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [nums[i], nums[j]] = [nums[j], nums[i]];
+        }
+        prevBoardBySize[totalCells] = [...nums];
+        return nums;
+      }
+
+      const candidate = [...nums];
+      for (let attempt = 0; attempt < 250; attempt++) {
+        for (let i = totalCells - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
+        }
+        let hasFixedPoint = false;
+        for (let i = 0; i < totalCells; i++) {
+          if (candidate[i] === prev[i]) {
+            hasFixedPoint = true;
+            break;
+          }
+        }
+        if (!hasFixedPoint) {
+          prevBoardBySize[totalCells] = [...candidate];
+          return candidate;
+        }
+      }
+
+      const fallback = sattoloDerangementRelativeTo(prev);
+      prevBoardBySize[totalCells] = [...fallback];
+      return fallback;
+    }
+
+    /********************************************************************
+     * 4. CORE GAME STATE & TIMER
+     ********************************************************************/
+    let gridSize = 5;
+    let timerMode = "stopwatch"; // 'stopwatch' | 'blitz30'
+    let boardNumbers = [];
+    let nextTarget = 1;
+    let isRunning = false;
+    let startTime = 0;
+    let lastHitElapsedMs = 0;
+    let rafId = null;
+    let roundId = 0;
+    const BLITZ_LIMIT_MS = 30000;
+
+    const themes = ["theme-classic", "theme-checker", "theme-dark"];
+    const themeLabels = ["Classic", "Checker", "Dark"];
+    let themeIndex = 0;
+
+    const gridEl = document.getElementById("grid");
+    const targetDisplay = document.getElementById("targetDisplay");
+    const timerLabel = document.getElementById("timerLabel");
+    const timerDisplay = document.getElementById("timerDisplay");
+    const boardOverlay = document.getElementById("boardOverlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayStat = document.getElementById("overlayStat");
+    const overlaySub = document.getElementById("overlaySub");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    function renderBoard(numbers) {
+      gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+      gridEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+      gridEl.innerHTML = "";
+
+      const fontSizeCq = `${(42 / gridSize).toFixed(2)}cqmin`;
+
+      numbers.forEach((num, idx) => {
+        const cell = document.createElement("div");
+        const row = Math.floor(idx / gridSize);
+        const col = idx % gridSize;
+        const isEven = (row + col) % 2 === 0;
+
+        cell.className = `cell ${isEven ? "even-cell" : "odd-cell"}`;
+        cell.style.fontSize = fontSizeCq;
+        cell.textContent = num;
+
+        cell.addEventListener("animationend", () => {
+          cell.classList.remove("wrong-flash");
+        });
+
+        cell.addEventListener("pointerdown", () => handleCellClick(cell, num));
+        gridEl.appendChild(cell);
+      });
+    }
+
+    function handleCellClick(cell, num) {
+      if (!isRunning) return;
+
+      const total = gridSize * gridSize;
+      if (num === nextTarget) {
+        lastHitElapsedMs = Math.max(1, Math.round(performance.now() - startTime));
+        cell.classList.remove("wrong-flash");
+        cell.classList.add("clicked-green");
+        if (nextTarget === total) {
+          playWinSound();
+          finishGame(true);
+        } else {
+          playHitSound(nextTarget, total);
+          nextTarget++;
+          targetDisplay.textContent = `${nextTarget}/${total}`;
+        }
+      } else if (!cell.classList.contains("clicked-green")) {
+        playWrongSound();
+        cell.classList.remove("wrong-flash");
+        void cell.offsetWidth;
+        cell.classList.add("wrong-flash");
+      }
+    }
+
+    function resetToReady(customTitle) {
+      roundId++;
+      isRunning = false;
+      cancelAnimationFrame(rafId);
+
+      const total = gridSize * gridSize;
+      nextTarget = 1;
+      lastHitElapsedMs = 0;
+      targetDisplay.textContent = `1/${total}`;
+      timerLabel.textContent = timerMode === "stopwatch" ? "Time" : "Time Left";
+      timerDisplay.textContent = timerMode === "stopwatch" ? "00.00s" : "30.00s";
+
+      startBtn.style.display = "inline-flex";
+      stopBtn.style.display = "none";
+
+      renderBoard(Array.from({ length: total }, (_, i) => i + 1));
+
+      overlayTitle.textContent = customTitle || `${gridSize}×${gridSize} Ready`;
+      overlayStat.style.display = "none";
+      overlaySub.textContent = timerMode === "stopwatch"
+        ? `Click 1 to ${total} in ascending order as fast as possible.`
+        : `30s Blitz: Click as many numbers in order (1 to ${total}) as you can before 30s runs out!`;
+      boardOverlay.classList.remove("hidden");
+    }
+
+    function startGame() {
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+
+      roundId++;
+      cancelAnimationFrame(rafId);
+
+      const total = gridSize * gridSize;
+      boardNumbers = generateDerangement(total);
+      nextTarget = 1;
+      lastHitElapsedMs = 0;
+      isRunning = true;
+
+      renderBoard(boardNumbers);
+      boardOverlay.classList.add("hidden");
+      targetDisplay.textContent = `1/${total}`;
+      timerLabel.textContent = timerMode === "stopwatch" ? "Time" : "Time Left";
+      startBtn.style.display = "none";
+      stopBtn.style.display = "inline-flex";
+
+      playStartSound();
+      startTime = performance.now();
+      tickTimer();
+    }
+
+    function tickTimer() {
+      if (!isRunning) return;
+      const elapsed = performance.now() - startTime;
+
+      if (timerMode === "stopwatch") {
+        timerDisplay.textContent = (elapsed / 1000).toFixed(2) + "s";
+        rafId = requestAnimationFrame(tickTimer);
+      } else {
+        const remaining = Math.max(0, BLITZ_LIMIT_MS - elapsed);
+        timerDisplay.textContent = (remaining / 1000).toFixed(2) + "s";
+        if (remaining <= 0) {
+          playTimeoutSound();
+          finishGame(false);
+        } else {
+          rafId = requestAnimationFrame(tickTimer);
+        }
+      }
+    }
+
+    async function finishGame(completedAll) {
+      const finishedRoundId = roundId;
+      isRunning = false;
+      cancelAnimationFrame(rafId);
+
+      const total = gridSize * gridSize;
+      const wallElapsedMs = Math.max(1, Math.round(performance.now() - startTime));
+      const numbersFound = completedAll ? total : (nextTarget - 1);
+
+      const recordedTimeMs = timerMode === "blitz30"
+        ? Math.min(lastHitElapsedMs || wallElapsedMs, BLITZ_LIMIT_MS)
+        : wallElapsedMs;
+
+      const recordedSec = (recordedTimeMs / 1000).toFixed(2);
+
+      startBtn.style.display = "inline-flex";
+      stopBtn.style.display = "none";
+
+      if (timerMode === "stopwatch") {
+        timerDisplay.textContent = `${recordedSec}s`;
+        overlayTitle.textContent = `Cleared ${gridSize}×${gridSize}!`;
+        overlayStat.style.display = "block";
+        overlayStat.textContent = `${recordedSec}s`;
+      } else {
+        const leftSec = completedAll
+          ? ((BLITZ_LIMIT_MS - recordedTimeMs) / 1000).toFixed(2)
+          : "00.00";
+        timerDisplay.textContent = `${leftSec}s`;
+        overlayTitle.textContent = completedAll ? `30s Blitz Cleared!` : `30s Blitz Complete!`;
+        overlayStat.style.display = "block";
+        overlayStat.textContent = completedAll
+          ? `${numbersFound}/${total} in ${recordedSec}s`
+          : `${numbersFound}/${total} (hit at ${recordedSec}s)`;
+      }
+
+      boardOverlay.classList.remove("hidden");
+
+      if (timerMode === "stopwatch" && !completedAll) return;
+      if (timerMode === "blitz30" && numbersFound === 0) {
+        overlaySub.textContent = "0 numbers clicked — score not recorded. Press Space to try again!";
+        return;
+      }
+
+      overlaySub.textContent = `Saving score for ${playerName}...`;
+      const result = await saveScore({
+        gridSize,
+        timerMode,
+        numbersFound,
+        completed: completedAll,
+        timeMs: recordedTimeMs
+      });
+
+      if (finishedRoundId !== roundId || isRunning) return;
+
+      if (result.ok && result.source === "cloud") {
+        overlaySub.textContent = `Saved to Cloud Toppers for ${playerName}!`;
+      } else if (result.ok && result.source === "local-guest") {
+        overlaySub.textContent = `Saved to local leaderboard (${playerName}). Sign in under Account to publish to Cloud Toppers.`;
+      } else if (result.ok && result.source === "local") {
+        overlaySub.textContent = `Saved to local leaderboard (${playerName}).`;
+      } else {
+        overlaySub.textContent = `Saved locally, but cloud upload failed: ${result.errorMessage}`;
+      }
+    }
+
+    /********************************************************************
+     * 5. SCORE SAVING & SERVER-DEDUPLICATED LEADERBOARD
+     ********************************************************************/
+    async function saveScore({ gridSize, timerMode, numbersFound, completed, timeMs }) {
+      const cleanName = sanitizeName(playerName);
+      const localEntry = {
+        user_id: currentUser ? currentUser.id : null,
+        player_name: cleanName,
+        grid_size: gridSize,
+        timer_mode: timerMode,
+        numbers_found: numbersFound,
+        completed: completed,
+        time_ms: timeMs,
+        created_at: new Date().toISOString()
+      };
+
+      writeLocalScore(localEntry);
+
+      if (!supabaseClient) {
+        return { ok: true, source: "local" };
+      }
+
+      if (!currentUser) {
+        return { ok: true, source: "local-guest" };
+      }
+
+      const payload = {
+        user_id: currentUser.id,
+        player_name: cleanName,
+        grid_size: gridSize,
+        timer_mode: timerMode,
+        numbers_found: numbersFound,
+        completed: completed,
+        time_ms: timeMs
+      };
+
+      const { error } = await supabaseClient.from("scores").insert([payload]);
+      if (error) {
+        console.error("Supabase insert error:", error);
+        return { ok: false, source: "local", errorMessage: error.message };
+      }
+      return { ok: true, source: "cloud" };
+    }
+
+    function getBestPerPlayerLocal(rows, mode) {
+      const sorted = [...rows].sort((a, b) => {
+        if (mode === "blitz30") {
+          const foundA = a.numbers_found ?? 0;
+          const foundB = b.numbers_found ?? 0;
+          if (foundB !== foundA) return foundB - foundA;
+        }
+        return a.time_ms - b.time_ms;
+      });
+
+      const seenPlayers = new Set();
+      const uniqueTop = [];
+      for (const row of sorted) {
+        const key = row.user_id || `local:${String(row.player_name).toLowerCase()}`;
+        if (!seenPlayers.has(key)) {
+          seenPlayers.add(key);
+          uniqueTop.push(row);
+          if (uniqueTop.length >= 10) break;
+        }
+      }
+      return uniqueTop;
+    }
+
+    let lbSize = 5;
+    let lbMode = "stopwatch";
+    let lbReqId = 0;
+
+    async function loadLeaderboard() {
+      const myReq = ++lbReqId;
+      const tbody = document.getElementById("lbTableBody");
+      const banner = document.getElementById("lbSourceBanner");
+      const metricHeader = document.getElementById("lbMetricHeader");
+
+      metricHeader.textContent = lbMode === "stopwatch" ? "Time" : "Found (Hit Time)";
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#a1a1aa;">Loading toppers...</td></tr>`;
+
+      let rows = [];
+      const totalCells = lbSize * lbSize;
+
+      if (supabaseClient) {
+        let query = supabaseClient
+          .from("toppers_leaderboard")
+          .select("user_id, player_name, numbers_found, completed, time_ms, created_at")
+          .eq("grid_size", lbSize)
+          .eq("timer_mode", lbMode);
+
+        if (lbMode === "stopwatch") {
+          query = query.order("time_ms", { ascending: true });
+        } else {
+          query = query
+            .order("numbers_found", { ascending: false })
+            .order("time_ms", { ascending: true });
+        }
+
+        const { data, error } = await query.limit(10);
+        if (myReq !== lbReqId) return;
+
+        if (error) {
+          banner.textContent = `Cloud Error (${error.message}) — Showing local device scores:`;
+          rows = getLocalFilteredScores(lbSize, lbMode);
+        } else {
+          banner.textContent = "🌐 Live Cloud Leaderboard (Deduplicated best run per account)";
+          rows = data || [];
+        }
+      } else {
+        banner.textContent = "💻 Local Device Leaderboard";
+        rows = getLocalFilteredScores(lbSize, lbMode);
+      }
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#a1a1aa;">No scores recorded for ${lbSize}×${lbSize} (${lbMode === "stopwatch" ? "Stopwatch" : "30s Blitz"}) yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map((r, idx) => {
+        const rankClass = idx === 0 ? "rank-1" : idx === 1 ? "rank-2" : idx === 2 ? "rank-3" : "";
+        const dateStr = new Date(r.created_at).toLocaleDateString();
+        const timeFormatted = `${(r.time_ms / 1000).toFixed(2)}s`;
+        const metricCell = lbMode === "stopwatch"
+          ? timeFormatted
+          : `${r.numbers_found ?? totalCells}/${totalCells} (${timeFormatted})`;
+
+        return `
+          <tr>
+            <td class="${rankClass}">#${idx + 1}</td>
+            <td class="${rankClass}">${escapeHtml(r.player_name)}</td>
+            <td style="font-family:var(--font-mono);">${metricCell}</td>
+            <td style="color:#a1a1aa; font-size:12px;">${dateStr}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function getLocalFilteredScores(size, mode) {
+      const localScores = readLocalScores();
+      const filtered = localScores.filter(s =>
+        s.grid_size === size &&
+        s.timer_mode === mode &&
+        (mode === "blitz30" ? (s.numbers_found ?? 0) >= 1 : s.completed !== false)
+      );
+      return getBestPerPlayerLocal(filtered, mode);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[s]));
+    }
+
+    /********************************************************************
+     * 6. UI EVENT LISTENERS
+     ********************************************************************/
+    document.querySelectorAll("#gridSelector .seg-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#gridSelector .seg-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        gridSize = parseInt(btn.dataset.size, 10);
+        resetToReady();
+      });
+    });
+
+    document.querySelectorAll("#modeSelector .seg-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#modeSelector .seg-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        timerMode = btn.dataset.mode;
+        resetToReady();
+      });
+    });
+
+    startBtn.addEventListener("click", startGame);
+    document.getElementById("overlayStartBtn").addEventListener("click", startGame);
+    document.getElementById("restartBtn").addEventListener("click", startGame);
+    stopBtn.addEventListener("click", () => resetToReady("Game Stopped"));
+
+    // Sound Toggle Button
+    document.getElementById("soundBtn").addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      safeStorageSet("schulte_sound_enabled", String(soundEnabled));
+      updateSoundButtonUI();
+      if (soundEnabled) playHitSound(12, 25);
+    });
+
+    window.addEventListener("keydown", (e) => {
+      const openModal = document.querySelector(".modal-backdrop.open");
+      if (e.code === "Escape" && openModal) {
+        openModal.classList.remove("open");
+        return;
+      }
+      const tag = document.activeElement ? document.activeElement.tagName : "";
+      if (e.code === "Space" && !openModal && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        if (!isRunning) startGame();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      const openModal = document.querySelector(".modal-backdrop.open");
+      const tag = document.activeElement ? document.activeElement.tagName : "";
+      if (e.code === "Space" && !openModal && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+      }
+    });
+
+    // Theme Switcher
+    document.getElementById("themeBtn").addEventListener("click", (e) => {
+      gridEl.classList.remove(themes[themeIndex]);
+      themeIndex = (themeIndex + 1) % themes.length;
+      gridEl.classList.add(themes[themeIndex]);
+      e.currentTarget.textContent = `Theme: ${themeLabels[themeIndex]}`;
+    });
+
+    // Modals Open/Close
+    document.getElementById("toppersBtn").addEventListener("click", () => {
+      document.getElementById("toppersModal").classList.add("open");
+      loadLeaderboard();
+    });
+
+    document.getElementById("accountBtn").addEventListener("click", () => {
+      document.getElementById("accountModal").classList.add("open");
+      updateAccountUI();
+    });
+
+    document.querySelectorAll("[data-close]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById(btn.dataset.close).classList.remove("open");
+      });
+    });
+
+    document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+      backdrop.addEventListener("click", (e) => {
+        if (e.target === backdrop) backdrop.classList.remove("open");
+      });
+    });
+
+    // Leaderboard Filter Tabs
+    document.querySelectorAll("#lbGridSelector .seg-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#lbGridSelector .seg-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        lbSize = parseInt(btn.dataset.lbsize, 10);
+        loadLeaderboard();
+      });
+    });
+
+    document.querySelectorAll("#lbModeSelector .seg-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#lbModeSelector .seg-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        lbMode = btn.dataset.lbmode;
+        loadLeaderboard();
+      });
+    });
+
+    // Account Actions
+    document.getElementById("signupBtn").addEventListener("click", async () => {
+      const name = sanitizeName(document.getElementById("authNameInput").value);
+      const email = document.getElementById("authEmailInput").value.trim();
+      const password = document.getElementById("authPassInput").value;
+      const msg = document.getElementById("authStatusMsg");
+
+      if (!supabaseClient) {
+        playerName = name;
+        safeStorageSet("schulte_player_name", name);
+        msg.textContent = `Saved local player profile as "${name}".`;
+        updateAccountUI();
+        return;
+      }
+
+      if (!email || password.length < 6) {
+        msg.textContent = "Please enter a valid email and a password of at least 6 characters.";
+        return;
+      }
+
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: { data: { player_name: name } }
+      });
+
+      if (error) {
+        msg.textContent = `Error: ${error.message}`;
+      } else if (data.user && !data.session) {
+        currentUser = null;
+        msg.textContent = "Account created! Please check your email to confirm your address before logging in.";
+        updateAccountUI();
+      } else {
+        currentUser = data.session?.user || null;
+        playerName = name;
+        safeStorageSet("schulte_player_name", name);
+        msg.textContent = "Account created and signed in!";
+        updateAccountUI();
+      }
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("authEmailInput").value.trim();
+      const password = document.getElementById("authPassInput").value;
+      const nameInput = document.getElementById("authNameInput").value.trim();
+      const msg = document.getElementById("authStatusMsg");
+
+      if (!supabaseClient) {
+        if (nameInput) {
+          playerName = sanitizeName(nameInput);
+          safeStorageSet("schulte_player_name", playerName);
+          msg.textContent = `Playing locally as "${playerName}".`;
+          updateAccountUI();
+        }
+        return;
+      }
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) {
+        msg.textContent = `Error: ${error.message}`;
+      } else {
+        currentUser = data.session?.user || data.user;
+        playerName = sanitizeName(currentUser?.user_metadata?.player_name || nameInput || email.split("@")[0]);
+        safeStorageSet("schulte_player_name", playerName);
+        msg.textContent = "Signed in successfully!";
+        updateAccountUI();
+      }
+    });
+
+    document.getElementById("saveProfileBtn").addEventListener("click", async () => {
+      const newName = sanitizeName(document.getElementById("profileNameInput").value);
+      const msg = document.getElementById("authStatusMsg");
+
+      if (supabaseClient && currentUser) {
+        const { error } = await supabaseClient.auth.updateUser({
+          data: { player_name: newName }
+        });
+        if (error) {
+          msg.textContent = `Failed to update name: ${error.message}`;
+          return;
+        }
+        await supabaseClient
+          .from("scores")
+          .update({ player_name: newName })
+          .eq("user_id", currentUser.id);
+      }
+
+      playerName = newName;
+      safeStorageSet("schulte_player_name", playerName);
+      updateAccountUI();
+      msg.textContent = `Display name updated to "${playerName}".`;
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      currentUser = null;
+      playerName = "Guest";
+      safeStorageRemove("schulte_player_name");
+      updateAccountUI();
+    });
+
+    // Initial Boot
+    updateSoundButtonUI();
+    resetToReady();
+    initSupabase();
+  </script>
+</body>
+</html>
