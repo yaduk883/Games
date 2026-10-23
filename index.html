@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mind Arcade — Schulte Pro · Wordle · Ultimate Chess</title>
+  <title>Mind Arcade — Schulte Pro · Wordle · Ultimate Chess · Text Clean</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&family=Libre+Baskerville:wght@700&display=swap" rel="stylesheet">
@@ -21,16 +21,13 @@
       --accent-wordle: #538d4e;
       --accent-wordle-alt: #b59f3b;
       --accent-chess: #5fb98a;
+      --accent-text: #c8f56a;
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --font-serif: 'Libre Baskerville', Georgia, serif;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
       width: 100%;
@@ -109,22 +106,13 @@
       align-items: center;
       gap: 6px;
       transition: all 0.15s ease;
+      white-space: nowrap;
     }
 
-    .nav-pill:hover {
-      color: var(--text-main);
-    }
+    .nav-pill:hover { color: var(--text-main); }
+    .nav-pill.active { background: #27272a; color: #ffffff; }
 
-    .nav-pill.active {
-      background: #27272a;
-      color: #ffffff;
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .nav-actions { display: flex; align-items: center; gap: 8px; }
 
     .player-pill {
       font-size: 12px;
@@ -141,7 +129,7 @@
 
     /* LANDING PAGE VIEW */
     .landing-view {
-      max-width: 1120px;
+      max-width: 1240px;
       margin: 0 auto;
       padding: 48px 20px 64px;
       display: flex;
@@ -149,9 +137,7 @@
       gap: 40px;
     }
 
-    .landing-view.hidden {
-      display: none !important;
-    }
+    .landing-view.hidden { display: none !important; }
 
     .hero {
       text-align: center;
@@ -192,7 +178,7 @@
     /* GAME CARDS GRID */
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
       gap: 24px;
     }
 
@@ -218,7 +204,6 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
     }
 
-    /* Visual Previews inside Cards */
     .card-preview {
       height: 150px;
       border-radius: 12px;
@@ -251,21 +236,11 @@
       color: #000000;
       border: 1px solid #000000;
     }
-    .preview-schulte span.done {
-      background: #16a34a;
-      color: #ffffff;
-    }
+    .preview-schulte span.done { background: #16a34a; color: #ffffff; }
 
     /* Preview 2: Wordle Tiles */
-    .preview-wordle {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .preview-wordle-row {
-      display: flex;
-      gap: 6px;
-    }
+    .preview-wordle { display: flex; flex-direction: column; gap: 6px; }
+    .preview-wordle-row { display: flex; gap: 6px; }
     .preview-wordle-tile {
       width: 36px;
       height: 36px;
@@ -291,20 +266,43 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
       font-size: 22px;
     }
-    .preview-chess span {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    .preview-chess span { display: flex; align-items: center; justify-content: center; }
     .sq-l { background: #ecdcb9; color: #1b1b1b; }
     .sq-d { background: #a97c50; color: #1b1b1b; }
     .sq-hi { background: #769656; color: #ffffff; }
 
-    .card-body {
+    /* Preview 4: Text Clean (messy -> clean) */
+    .preview-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+    }
+    .pt-box {
+      width: 108px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: #181818;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 5px;
     }
+    .pt-line {
+      height: 5px;
+      border-radius: 3px;
+      background: #555;
+    }
+    .pt-gap { height: 5px; }
+    .pt-box.out { border-color: rgba(200, 245, 106, 0.4); }
+    .pt-box.out .pt-line { background: var(--accent-text); opacity: 0.85; }
+    .pt-arrow {
+      color: var(--accent-text);
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .card-body { display: flex; flex-direction: column; gap: 10px; }
 
     .card-tag-row {
       display: flex;
@@ -332,29 +330,14 @@
       color: #4ade80;
     }
 
-    .card-title {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
+    .card-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+    .card-title.wordle-font { font-family: var(--font-serif); letter-spacing: 0.01em; }
+    .card-title.text-font { font-family: var(--font-mono); letter-spacing: -0.03em; }
+    .card-title.text-font span { color: var(--accent-text); }
 
-    .card-title.wordle-font {
-      font-family: var(--font-serif);
-      letter-spacing: 0.01em;
-    }
+    .card-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
 
-    .card-desc {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    .card-features {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
-    }
+    .card-features { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 
     .feature-chip {
       font-size: 11.5px;
@@ -391,13 +374,12 @@
       transition: filter 0.15s ease;
     }
 
-    .play-btn:hover {
-      filter: brightness(1.1);
-    }
+    .play-btn:hover { filter: brightness(1.1); }
 
     .btn-schulte { background: var(--accent-schulte); }
     .btn-wordle  { background: var(--accent-wordle); }
     .btn-chess   { background: #2f6f4f; }
+    .btn-text    { background: var(--accent-text); color: #0f0f0f; }
 
     /* EMBEDDED GAME STAGE */
     .game-stage {
@@ -407,9 +389,7 @@
       background: #09090b;
     }
 
-    .game-stage.hidden {
-      display: none !important;
-    }
+    .game-stage.hidden { display: none !important; }
 
     .game-iframe {
       width: 100%;
@@ -418,16 +398,10 @@
       display: block;
     }
 
-    @media (max-width: 640px) {
-      .hub-navbar {
-        padding: 0 12px;
-      }
-      .player-pill {
-        display: none;
-      }
-      .nav-pill span.label-text {
-        display: none;
-      }
+    @media (max-width: 760px) {
+      .hub-navbar { padding: 0 12px; }
+      .player-pill { display: none; }
+      .nav-pill span.label-text { display: none; }
     }
   </style>
 </head>
@@ -457,6 +431,10 @@
         <span>♞</span>
         <span class="label-text">Ultimate Chess</span>
       </button>
+      <button class="nav-pill" data-target="text" type="button">
+        <span>📝</span>
+        <span class="label-text">Text Clean</span>
+      </button>
     </nav>
 
     <div class="nav-actions">
@@ -467,10 +445,10 @@
   <!-- LANDING PAGE VIEW -->
   <main class="landing-view" id="landingView">
     <section class="hero">
-      <span class="hero-eyebrow">3 Cognitive &amp; Strategy Classics</span>
+      <span class="hero-eyebrow">3 Classics + 1 Utility Tool</span>
       <h1 class="hero-title">Train Focus, Vocabulary &amp; Strategy.</h1>
       <p class="hero-sub">
-        Select a game below to launch immediately. All progress, custom themes, statistics, and cloud leaderboards are preserved.
+        Select a game or tool below to launch immediately. All progress, custom themes, statistics, and cloud leaderboards are preserved.
       </p>
     </section>
 
@@ -587,6 +565,50 @@
           <button class="play-btn btn-chess" type="button">Launch Ultimate Chess &rarr;</button>
         </div>
       </article>
+
+      <!-- TOOL 4: TEXT CLEAN -->
+      <article class="game-card" data-launch="text">
+        <div class="card-preview">
+          <div class="preview-text" aria-hidden="true">
+            <div class="pt-box">
+              <div class="pt-line" style="width:90%"></div>
+              <div class="pt-line" style="width:60%"></div>
+              <div class="pt-gap"></div>
+              <div class="pt-line" style="width:80%"></div>
+              <div class="pt-gap"></div>
+              <div class="pt-line" style="width:45%"></div>
+              <div class="pt-line" style="width:70%"></div>
+            </div>
+            <span class="pt-arrow">&rarr;</span>
+            <div class="pt-box out">
+              <div class="pt-line" style="width:100%"></div>
+              <div class="pt-line" style="width:100%"></div>
+              <div class="pt-line" style="width:55%"></div>
+              <div class="pt-gap"></div>
+              <div class="pt-line" style="width:100%"></div>
+              <div class="pt-line" style="width:40%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-tag-row">
+            <span class="card-tag">Utility</span>
+            <span class="card-stat" id="statText">Offline · Instant</span>
+          </div>
+          <h2 class="card-title text-font">text<span>.</span>clean</h2>
+          <p class="card-desc">
+            Paste messy, hard-wrapped text and turn it into clean paragraphs with your choice of separator, plus a live word count and diff view.
+          </p>
+          <div class="card-features">
+            <span class="feature-chip">Custom Separators</span>
+            <span class="feature-chip">.txt Drag &amp; Drop</span>
+            <span class="feature-chip">Diff View</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="play-btn btn-text" type="button">Launch text.clean &rarr;</button>
+        </div>
+      </article>
     </section>
   </main>
 
@@ -596,11 +618,12 @@
   </section>
 
   <script>
-    // Map each game key to its unmodified HTML file
+    // Map each tool key to its unmodified HTML file
     const GAME_URLS = {
       schulte: "schulte.html",
       wordle: "wordle.html",
-      chess: "chess.html"
+      chess: "chess.html",
+      text: "textclean.html"
     };
 
     const landingView = document.getElementById("landingView");
@@ -631,7 +654,7 @@
       landingView.classList.add("hidden");
       gameStage.classList.remove("hidden");
 
-      // If embedded srcdoc templates exist (from Option 2 bundler), use srcdoc; otherwise load the file URL
+      // If embedded srcdoc templates exist (from a bundler), use srcdoc; otherwise load the file URL
       const tpl = document.getElementById(`tpl-${target}`);
       if (tpl) {
         gameFrame.removeAttribute("src");
@@ -649,7 +672,7 @@
       };
     }
 
-    // Read existing localStorage stats from the 3 games to display on the Hub
+    // Read existing localStorage stats from the games to display on the Hub
     function refreshLocalStats() {
       try {
         const playerName = localStorage.getItem("schulte_player_name") || "Guest";
