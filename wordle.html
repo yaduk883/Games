@@ -2010,6 +2010,673 @@
       updateCountdown();
       setInterval(updateCountdown, 1000);
     });
+
+    
   </script>
+  <!-- WORDLE-PVP:BEGIN -->
+<style>
+  .header-group { min-width: 0; }
+  .header-group.left, .header-group.right { min-width: 112px; }
+  @media (max-width: 400px) { .icon-btn { width: 32px; } }
+
+  .pvp-bar {
+    width: 100%; height: 34px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: space-between; gap: 8px; padding: 0 12px; cursor: pointer;
+    background: var(--pill-bg); border-bottom: 1px solid var(--border-header);
+    font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  }
+  .pvp-tag { background: var(--color-correct); color: #fff; border-radius: 999px; padding: 2px 9px; letter-spacing: .06em; font-size: 11px; }
+  .pvp-opp { display: inline-flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-primary); }
+  #pvp-opp-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pvp-dots { display: inline-flex; align-items: center; gap: 3px; }
+  .pvp-dots i { width: 10px; height: 10px; border-radius: 2px; background: var(--color-absent); display: inline-block; }
+  .pvp-dots i.correct { background: var(--color-correct); }
+  .pvp-dots i.present { background: var(--color-present); }
+  .pvp-dots .pn { margin-left: 4px; color: var(--text-secondary); font-size: 11px; }
+  .pvp-timer { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--text-primary); }
+  .pvp-timer.low { color: #e5484d; }
+  body.pvp-on .board-grid { width: min(330px, 78vw, calc((100vh - 300px) * 5 / 6)); }
+
+  .pvp-sub { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 12px; text-align: center; }
+  .pvp-label { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); margin: 12px 0 6px; }
+  .pvp-input {
+    width: 100%; padding: 10px 12px; border-radius: 8px; font: inherit; font-size: 15px; font-weight: 600;
+    background: var(--pill-bg); color: var(--text-primary); border: 1px solid var(--border-header); outline: none;
+    user-select: text; -webkit-user-select: text;
+  }
+  .pvp-input:focus { border-color: var(--color-correct); }
+  .pvp-input.code { text-align: center; text-transform: uppercase; letter-spacing: .3em; font-size: 20px; font-weight: 800; }
+  .pvp-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pvp-mode {
+    display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 10px 12px; cursor: pointer;
+    border: 2px solid var(--border-header); border-radius: 10px; background: transparent; color: var(--text-primary); font: inherit;
+  }
+  .pvp-mode b { font-size: 14px; }
+  .pvp-mode span { font-size: 11.5px; color: var(--text-secondary); line-height: 1.35; }
+  .pvp-mode.sel { border-color: var(--color-correct); background: var(--pill-bg); }
+  .pvp-btn {
+    width: 100%; margin-top: 12px; padding: 11px 14px; border: none; border-radius: 8px; cursor: pointer;
+    font: inherit; font-size: 14px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+    background: var(--color-correct); color: #fff;
+  }
+  .pvp-btn.secondary { background: var(--pill-bg); color: var(--text-primary); border: 1px solid var(--border-header); }
+  .pvp-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .pvp-or { text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--text-secondary); margin: 14px 0 2px; text-transform: uppercase; }
+  .pvp-msg { min-height: 18px; margin-top: 10px; font-size: 13px; font-weight: 700; text-align: center; color: var(--text-secondary); }
+  .pvp-msg.err { color: #e5484d; }
+  .pvp-code-big { font-size: 40px; font-weight: 800; letter-spacing: .3em; text-align: center; padding: 8px 0 8px 14px; font-variant-numeric: tabular-nums; }
+  .pvp-details { margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+  .pvp-details summary { cursor: pointer; font-weight: 700; }
+  .pvp-result-title { font-size: 28px; font-weight: 800; text-align: center; margin: 4px 0 6px; }
+  .pvp-result-detail { text-align: center; font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+  .pvp-words { background: var(--pill-bg); border: 1px solid var(--border-header); border-radius: 8px; padding: 10px 14px; font-size: 13px; text-align: center; color: var(--text-secondary); line-height: 1.7; }
+  .pvp-words strong { color: var(--color-correct); letter-spacing: .12em; text-transform: uppercase; }
+</style>
+
+<script>
+(() => {
+  "use strict";
+  if (window.__wordlePvpLoaded) return;
+  window.__wordlePvpLoaded = true;
+
+  const DURATION_MS = 10 * 60 * 1000; // 10 minutes per round
+  const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  // Pre-filled with your Supabase project credentials from Schulte Pro (index.html)
+  const DEFAULT_SB_URL = "https://hzmellvadxmlfvxlyolb.supabase.co";
+  const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bWVsbHZhZHhtbGZ2eGx5b2xiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NDQyNDcsImV4cCI6MjEwODEyMDI0N30.g7_d6BRF8uRHKTElE3kZGQCJ-3qvzqHSWixjv6xgu2Y";
+
+  const SB_URL_KEY = "schulte_sb_url";
+  const SB_KEY_KEY = "schulte_sb_key";
+  const NAME_KEY = "wordle_pvp_name";
+
+  const $ = (id) => document.getElementById(id);
+  const lsGet = (k, fallback = "") => {
+    try { return localStorage.getItem(k) || fallback; } catch (_) { return fallback; }
+  };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+  const cleanName = (s) => String(s || "").replace(/[<>]/g, "").trim().slice(0, 20) || "Player";
+
+  function newSession() {
+    return {
+      phase: "idle",   // idle | wait | set | play | over
+      role: null, mode: "race", code: "", cid: "", name: "Player", oppName: "Opponent",
+      oppPresent: false, channel: null, client: null, round: 0,
+      target: null, myWord: null, endAt: 0, timerId: 0, expireTimer: 0, joinTimer: 0,
+      reported: 0, doneSent: false, expired: false, result: null,
+      hostFailed: false, guestFailed: false, joined: false, started: false, giveArm: false
+    };
+  }
+  let S = newSession();
+  let chosenMode = "race";
+
+  /* ---------------------------------------------------------- UI build */
+  function buildUI() {
+    const left = document.querySelector(".header-group.left");
+    const btn = document.createElement("button");
+    btn.id = "btn-pvp"; btn.className = "icon-btn"; btn.type = "button";
+    btn.title = "Player vs Player"; btn.setAttribute("aria-label", "Player vs Player");
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
+    left.appendChild(btn);
+
+    const bar = document.createElement("div");
+    bar.id = "pvp-bar"; bar.className = "pvp-bar hidden";
+    bar.innerHTML = '<span class="pvp-tag" id="pvp-tag">RACE</span>' +
+      '<span class="pvp-opp"><span id="pvp-opp-name">Opponent</span><span class="pvp-dots" id="pvp-opp-dots"></span></span>' +
+      '<span class="pvp-timer" id="pvp-timer">10:00</span>';
+    document.querySelector(".app-header").insertAdjacentElement("afterend", bar);
+
+    const url = lsGet(SB_URL_KEY, DEFAULT_SB_URL);
+    const key = lsGet(SB_KEY_KEY, DEFAULT_SB_KEY);
+    const defaultName = lsGet(NAME_KEY) || lsGet("schulte_player_name") || "";
+
+    const modal = document.createElement("div");
+    modal.id = "modal-pvp"; modal.className = "modal-backdrop hidden";
+    modal.setAttribute("role", "dialog"); modal.setAttribute("aria-modal", "true");
+    modal.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-header">
+          <span style="width:32px"></span>
+          <h2 class="modal-title">Player vs Player</h2>
+          <button id="pvp-close" class="modal-close" type="button" aria-label="Close">&times;</button>
+        </div>
+
+        <div id="pvp-view-menu" class="pvp-view">
+          <p class="pvp-sub">Play a friend online. Every round has a <strong>10-minute</strong> limit. Share the 5-letter room code to start.</p>
+          <label class="pvp-label" for="pvp-name">Your name</label>
+          <input id="pvp-name" class="pvp-input" maxlength="20" placeholder="Player" autocomplete="off" />
+
+          <label class="pvp-label">Select PvP Mode (for a new room)</label>
+          <div class="pvp-modes">
+            <button type="button" class="pvp-mode sel" data-pmode="race"><b>⚡ Same Word Race</b><span>Both players guess the same word. First to find it wins.</span></button>
+            <button type="button" class="pvp-mode" data-pmode="duel"><b>🎯 Word Duel</b><span>Assign a secret word to your opponent. Reveal answer anytime if stuck.</span></button>
+          </div>
+          <button id="pvp-create" class="pvp-btn" type="button">Create Room &amp; Get Code</button>
+
+          <div class="pvp-or">— or join with a code —</div>
+          <input id="pvp-code" class="pvp-input code" maxlength="5" placeholder="CODE" autocomplete="off" />
+          <button id="pvp-join" class="pvp-btn secondary" type="button">Join Room</button>
+
+          <div id="pvp-msg" class="pvp-msg"></div>
+
+          <details id="pvp-conn" class="pvp-details">
+            <summary>Connection settings (Supabase)</summary>
+            <label class="pvp-label" for="pvp-sb-url">Project URL</label>
+            <input id="pvp-sb-url" class="pvp-input" placeholder="https://xyz.supabase.co" value="${url.replace(/"/g, "&quot;")}" />
+            <label class="pvp-label" for="pvp-sb-key">Anon public key</label>
+            <input id="pvp-sb-key" type="password" class="pvp-input" placeholder="eyJ..." value="${key.replace(/"/g, "&quot;")}" />
+          </details>
+        </div>
+
+        <div id="pvp-view-wait" class="pvp-view hidden">
+          <p class="pvp-sub" id="pvp-wait-mode"></p>
+          <div class="pvp-code-big" id="pvp-code-big">-----</div>
+          <button id="pvp-copy" class="pvp-btn secondary" type="button" style="margin-top:0">Copy Room Code</button>
+          <div id="pvp-wait-status" class="pvp-msg">Waiting for opponent…</div>
+          <button id="pvp-cancel" class="pvp-btn secondary" type="button">Leave Room</button>
+        </div>
+
+        <div id="pvp-view-set" class="pvp-view hidden">
+          <p class="pvp-sub" id="pvp-set-text">Assign a valid 5-letter word for your opponent to guess.</p>
+          <input id="pvp-setword" class="pvp-input code" maxlength="5" placeholder="WORD" autocomplete="off" />
+          <button id="pvp-setbtn" class="pvp-btn" type="button">Assign Word to Opponent</button>
+          <div id="pvp-set-status" class="pvp-msg"></div>
+          <button id="pvp-leave-set" class="pvp-btn secondary" type="button">Leave Match</button>
+        </div>
+
+        <div id="pvp-view-status" class="pvp-view hidden">
+          <p class="pvp-sub" id="pvp-status-text"></p>
+          <div class="pvp-code-big" id="pvp-status-time" style="font-size:34px;letter-spacing:.1em">10:00</div>
+          <button id="pvp-resume" class="pvp-btn" type="button">Back To Game</button>
+          <button id="pvp-leave-status" class="pvp-btn secondary" type="button">Leave Match</button>
+        </div>
+
+        <div id="pvp-view-result" class="pvp-view hidden">
+          <div class="pvp-result-title" id="pvp-result-title"></div>
+          <div class="pvp-result-detail" id="pvp-result-detail"></div>
+          <div class="pvp-words" id="pvp-result-words"></div>
+          <button id="pvp-view-board" class="pvp-btn secondary" type="button">View Board</button>
+          <button id="pvp-rematch" class="pvp-btn" type="button">Rematch</button>
+          <div id="pvp-result-status" class="pvp-msg"></div>
+          <button id="pvp-leave-result" class="pvp-btn secondary" type="button" style="margin-top:0">Leave Room</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    $("pvp-name").value = defaultName;
+  }
+
+  function showView(name) {
+    ["menu", "wait", "set", "status", "result"].forEach((v) => $("pvp-view-" + v).classList.toggle("hidden", v !== name));
+  }
+  function openPvpModal() { $("modal-pvp").classList.remove("hidden"); }
+  function closePvpModal() { $("modal-pvp").classList.add("hidden"); }
+  function setMsg(text, isErr) { const m = $("pvp-msg"); m.textContent = text || ""; m.classList.toggle("err", !!isErr); }
+  const modeName = (m) => (m === "race" ? "Same Word Race" : "Word Duel");
+
+  function openForPhase() {
+    if (S.phase === "idle") showView("menu");
+    else if (S.phase === "wait") showView("wait");
+    else if (S.phase === "set") showView("set");
+    else if (S.phase === "play") { refreshStatusView(); showView("status"); }
+    else if (S.phase === "over") showView("result");
+    openPvpModal();
+  }
+
+  function refreshStatusView() {
+    $("pvp-status-text").textContent = modeName(S.mode) + " vs " + S.oppName + " · Room " + S.code;
+  }
+
+  /* ---------------------------------------------------------- Supabase */
+  let libPromise = null;
+  let cache = { sig: "", client: null };
+
+  function loadLib() {
+    if (window.supabase && window.supabase.createClient) return Promise.resolve();
+    if (libPromise) return Promise.resolve(libPromise);
+    libPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      s.onload = () => resolve();
+      s.onerror = () => { libPromise = null; reject(new Error("Could not load Supabase SDK. Check your internet connection.")); };
+      document.head.appendChild(s);
+    });
+    return libPromise;
+  }
+
+  async function getClient() {
+    const url = $("pvp-sb-url").value.trim() || lsGet(SB_URL_KEY, DEFAULT_SB_URL);
+    const key = $("pvp-sb-key").value.trim() || lsGet(SB_KEY_KEY, DEFAULT_SB_KEY);
+    if (!/^https?:\/\//.test(url) || !key || key.indexOf("YOUR_") === 0) {
+      $("pvp-conn").open = true;
+      throw new Error("Add your Supabase URL and anon key under Connection settings.");
+    }
+    lsSet(SB_URL_KEY, url); lsSet(SB_KEY_KEY, key);
+    await loadLib();
+    const sig = url + "|" + key;
+    if (cache.sig !== sig) {
+      cache = { sig, client: window.supabase.createClient(url, key, { realtime: { params: { eventsPerSecond: 10 } } }) };
+    }
+    return cache.client;
+  }
+
+  function send(payload) {
+    if (!S.channel) return;
+    try { S.channel.send({ type: "broadcast", event: "msg", payload }); } catch (_) {}
+  }
+
+  function teardown() {
+    clearInterval(S.timerId); clearTimeout(S.expireTimer); clearTimeout(S.joinTimer);
+    try { if (S.channel) S.channel.untrack(); } catch (_) {}
+    try { if (S.client && S.channel) S.client.removeChannel(S.channel); } catch (_) {}
+  }
+
+  async function connect(code, role) {
+    const btns = [$("pvp-create"), $("pvp-join")];
+    btns.forEach((b) => (b.disabled = true));
+    setMsg("Connecting…");
+    let client;
+    try { client = await getClient(); }
+    catch (e) { setMsg(e.message, true); btns.forEach((b) => (b.disabled = false)); return; }
+
+    const name = cleanName($("pvp-name").value);
+    lsSet(NAME_KEY, name);
+    teardown();
+    S = newSession();
+    S.client = client; S.code = code; S.role = role; S.name = name;
+    S.mode = role === "host" ? chosenMode : "race";
+    S.cid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    const ch = client.channel("wordle-pvp-" + code, { config: { broadcast: { self: false }, presence: { key: S.cid } } });
+    S.channel = ch;
+    ch.on("broadcast", { event: "msg" }, ({ payload }) => { if (payload && typeof payload === "object") onMsg(payload); });
+    ch.on("presence", { event: "sync" }, onPresence);
+    ch.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        try { await ch.track({ name, role, joinedAt: Date.now(), cid: S.cid }); } catch (_) {}
+        S.phase = "wait";
+        $("pvp-code-big").textContent = code;
+        $("pvp-wait-mode").textContent = role === "host"
+          ? "Room created · " + modeName(S.mode) + ". Share this code with your opponent."
+          : "Joining room…";
+        $("pvp-wait-status").textContent = role === "host" ? "Waiting for opponent…" : "Looking for host…";
+        showView("wait");
+        if (role === "guest") {
+          S.joinTimer = setTimeout(() => { if (!S.joined) fail("Room not found. Check the code and try again."); }, 6000);
+        }
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        fail("Could not reach the realtime server. Check your internet connection.");
+      }
+    });
+    btns.forEach((b) => (b.disabled = false));
+  }
+
+  function fail(msg) {
+    teardown();
+    S = newSession();
+    document.body.classList.remove("pvp-on");
+    $("pvp-bar").classList.add("hidden");
+    showView("menu"); setMsg(msg, true); openPvpModal();
+  }
+
+  /* ---------------------------------------------------------- presence */
+  function onPresence() {
+    if (!S.channel) return;
+    const st = S.channel.presenceState();
+    const players = [];
+    Object.keys(st).forEach((k) => st[k].forEach((m) => players.push(m)));
+    players.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+
+    if (S.role === "guest" && !S.joined) {
+      const hostP = players.find((p) => p.role === "host");
+      if (!hostP) return;
+      if (players.findIndex((p) => p.cid === S.cid) >= 2) { fail("This room is already full."); return; }
+      S.joined = true; clearTimeout(S.joinTimer);
+    }
+    const opp = players.find((p) => p.cid !== S.cid && p.role !== S.role);
+    const was = S.oppPresent;
+    S.oppPresent = !!opp;
+    if (opp) S.oppName = cleanName(opp.name);
+    if (opp && !was) onOppJoined();
+    else if (!opp && was) onOppLeft();
+  }
+
+  function onOppJoined() {
+    if (S.phase === "wait") {
+      $("pvp-wait-status").textContent = S.oppName + " joined! Starting…";
+      if (S.role === "host" && !S.started) {
+        S.started = true;
+        setTimeout(() => { if (S.phase === "wait" && S.oppPresent) beginRound(); }, 700);
+      } else if (S.role === "guest") {
+        $("pvp-wait-mode").textContent = "Connected to " + S.oppName + ". Starting…";
+      }
+    }
+    refreshRematch();
+  }
+
+  function onOppLeft() {
+    if (S.phase === "wait") { S.started = false; $("pvp-wait-status").textContent = "Opponent left. Waiting…"; }
+    else if (S.phase === "set" || S.phase === "play") showResult(S.role, S.oppName + " disconnected.");
+    refreshRematch();
+  }
+
+  /* ---------------------------------------------------------- rounds */
+  function resetRound() {
+    clearInterval(S.timerId); clearTimeout(S.expireTimer);
+    S.target = null; S.myWord = null; S.reported = 0; S.doneSent = false; S.expired = false;
+    S.result = null; S.hostFailed = false; S.guestFailed = false;
+  }
+
+  function beginRound() {
+    if (S.role !== "host" || !S.oppPresent) return;
+    S.round++; resetRound();
+    if (S.mode === "race") {
+      const w = SOLUTIONS[Math.floor(Math.random() * SOLUTIONS.length)];
+      send({ t: "start", round: S.round, mode: "race", word: w });
+      startPlay(w);
+    } else {
+      send({ t: "setphase", round: S.round, mode: "duel" });
+      enterSet();
+    }
+  }
+
+  function enterSet() {
+    S.phase = "set"; S.myWord = null;
+    $("pvp-set-text").textContent = "Assign a secret 5-letter word for " + S.oppName + " to find. Once both players lock in a word, the 10:00 timer begins.";
+    $("pvp-setword").value = ""; $("pvp-setword").disabled = false; $("pvp-setbtn").disabled = false;
+    $("pvp-set-status").textContent = ""; $("pvp-set-status").classList.remove("err");
+    showView("set"); openPvpModal();
+    setTimeout(() => $("pvp-setword").focus(), 50);
+  }
+
+  function submitSetWord() {
+    if (S.phase !== "set" || S.myWord) return;
+    const w = $("pvp-setword").value.trim().toLowerCase();
+    const st = $("pvp-set-status");
+    if (!/^[a-z]{5}$/.test(w)) { st.textContent = "Enter exactly 5 letters."; st.classList.add("err"); return; }
+    if (!isValidWord(w)) { st.textContent = "Word is not in the dictionary."; st.classList.add("err"); return; }
+    S.myWord = w;
+    $("pvp-setword").disabled = true; $("pvp-setbtn").disabled = true;
+    st.classList.remove("err");
+    st.textContent = S.target ? "Starting match…" : "Word assigned! Waiting for " + S.oppName + " to assign yours…";
+    send({ t: "word", round: S.round, word: w });
+    if (S.target) startPlay(S.target);
+  }
+
+  function startPlay(word) {
+    S.phase = "play"; S.target = word; S.endAt = Date.now() + DURATION_MS;
+    Object.assign(gameState, {
+      mode: "pvp", puzzleLabel: "PVP", targetWord: word, guesses: [], evaluations: [],
+      currentGuess: "", status: "IN_PROGRESS", isRevealing: false, hintsUsed: 0
+    });
+    clearToasts();
+    $("mode-label-text").textContent = "PVP · " + (S.mode === "race" ? "RACE" : "DUEL");
+    document.body.classList.add("pvp-on");
+    $("pvp-bar").classList.remove("hidden");
+    $("pvp-tag").textContent = S.mode === "race" ? "RACE" : "DUEL";
+    $("pvp-opp-name").textContent = S.oppName;
+    $("pvp-opp-dots").innerHTML = '<span class="pn">0/6</span>';
+    renderBoardInstant();
+    closePvpModal();
+    startTimer();
+    showToast("Match started! 10:00 remaining", 1600);
+  }
+
+  function startTimer() {
+    clearInterval(S.timerId);
+    S.timerId = setInterval(tick, 250);
+    tick();
+  }
+
+  function tick() {
+    const rem = Math.max(0, S.endAt - Date.now());
+    const s = Math.ceil(rem / 1000);
+    const txt = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    $("pvp-timer").textContent = txt;
+    $("pvp-timer").classList.toggle("low", rem <= 60000);
+    $("pvp-status-time").textContent = txt;
+    if (rem <= 0) onTimeUp();
+  }
+
+  function lockBoard() {
+    if (gameState.mode !== "pvp") return;
+    if (gameState.status === "IN_PROGRESS") { gameState.status = "LOST"; gameState.currentGuess = ""; }
+    renderBoardInstant();
+  }
+
+  function onTimeUp() {
+    clearInterval(S.timerId);
+    if (S.phase !== "play") return;
+    S.expired = true;
+    lockBoard();
+    showToast("10:00 Time's up!", 1800);
+    const reason = "10 minutes expired — nobody found the word in time.";
+    if (S.role === "host") declare("draw", reason);
+    else S.expireTimer = setTimeout(() => { if (!S.result) showResult("draw", reason); }, 2500);
+  }
+
+  /* ---------------------------------------------------------- results */
+  function declare(winner, reason) {
+    if (S.role !== "host" || S.result) return;
+    send({ t: "result", round: S.round, winner, reason });
+    showResult(winner, reason);
+  }
+
+  function arbitrate(who, outcome, revealed) {
+    if (S.role !== "host" || S.result || S.phase !== "play") return;
+    const actorName = who === "host" ? S.name : S.oppName;
+    const otherRole = who === "host" ? "guest" : "host";
+    if (outcome === "won") {
+      declare(who, actorName + " solved the word first!");
+    } else {
+      if (who === "host") S.hostFailed = true; else S.guestFailed = true;
+      // In Duel mode, if a player gives up / reveals the answer or exhausts guesses:
+      if (S.hostFailed && S.guestFailed) {
+        declare("draw", "Both players revealed the answer / ran out of guesses.");
+      } else if (revealed && S.mode === "duel") {
+        // Let the other player keep trying or win if they solve it; if you want instant win when opponent reveals, uncomment below:
+        // declare(otherRole, actorName + " revealed the answer and gave up!");
+      }
+    }
+  }
+
+  function showResult(winner, reason) {
+    if (S.result) return;
+    S.result = { winner, reason };
+    S.phase = "over";
+    clearInterval(S.timerId); clearTimeout(S.expireTimer);
+    lockBoard();
+    const me = S.role;
+    let title;
+    if (winner === "draw") title = "🤝 Draw";
+    else if (winner === me) title = "🏆 You Win!";
+    else title = "😔 You Lose";
+    $("pvp-result-title").textContent = title;
+    $("pvp-result-detail").textContent = reason || "";
+    if (S.mode === "race") {
+      $("pvp-result-words").innerHTML = "Target Word: <strong>" + String(S.target || "").toUpperCase() + "</strong>";
+    } else {
+      $("pvp-result-words").innerHTML =
+        "Word assigned to you: <strong>" + String(S.target || "?").toUpperCase() + "</strong><br>" +
+        "Word you assigned to " + S.oppName + ": <strong>" + String(S.myWord || "?").toUpperCase() + "</strong>";
+    }
+    $("pvp-rematch").textContent = S.role === "host" ? "Play Rematch" : "Request Rematch";
+    $("pvp-result-status").textContent = "";
+    refreshRematch();
+    showView("result"); openPvpModal();
+    try { if (winner === me && typeof sfxWin === "function") sfxWin(); else if (winner !== "draw" && typeof sfxLoss === "function") sfxLoss(); } catch (_) {}
+  }
+
+  function refreshRematch() {
+    const b = $("pvp-rematch");
+    if (b) b.disabled = !(S.phase === "over" && S.oppPresent);
+  }
+
+  function showOppRow(row, n) {
+    const ok = { correct: 1, present: 1, absent: 1 };
+    const dots = (Array.isArray(row) ? row : []).slice(0, 5).map((s) => '<i class="' + (ok[s] ? s : "absent") + '"></i>').join("");
+    $("pvp-opp-dots").innerHTML = dots + '<span class="pn">' + (Number(n) || 0) + "/6</span>";
+  }
+
+  /* ---------------------------------------------------------- messages */
+  function onMsg(m) {
+    switch (m.t) {
+      case "start":
+        if (S.role !== "guest") return;
+        S.mode = m.mode === "duel" ? "duel" : "race"; S.round = m.round; resetRound();
+        if (typeof m.word === "string" && /^[a-z]{5}$/.test(m.word)) startPlay(m.word);
+        break;
+      case "setphase":
+        if (S.role !== "guest") return;
+        S.mode = "duel"; S.round = m.round; resetRound(); enterSet();
+        break;
+      case "word":
+        if (m.round !== S.round || typeof m.word !== "string" || !/^[a-z]{5}$/.test(m.word)) return;
+        S.target = m.word;
+        if (S.phase === "set" && S.myWord) startPlay(S.target);
+        break;
+      case "prog":
+        if (m.round !== S.round) return;
+        showOppRow(m.row, m.n);
+        break;
+      case "done":
+        if (m.round !== S.round || S.phase !== "play") return;
+        if (S.role === "host") arbitrate("guest", m.outcome === "won" ? "won" : "failed", !!m.revealed);
+        if (m.outcome !== "won" && !S.result) {
+          showToast(m.revealed ? (S.oppName + " revealed the answer! Solve yours to win!") : (S.oppName + " used all 6 tries! Solve yours to win!"), 3200);
+        }
+        break;
+      case "result":
+        if (m.round !== S.round || S.result) return;
+        showResult(m.winner === "host" || m.winner === "guest" ? m.winner : "draw", String(m.reason || "").slice(0, 120));
+        break;
+      case "rematch_req":
+        if (S.role === "host" && S.phase === "over" && S.oppPresent) beginRound();
+        break;
+    }
+  }
+
+  /* ---------------------------------------------------------- hooks into the base game */
+  function wrap(name, fn) {
+    const orig = window[name];
+    if (typeof orig !== "function") return;
+    window[name] = function () { return fn(orig, this, arguments); };
+  }
+
+  wrap("updateStatusStrip", (orig, self, args) => {
+    const r = orig.apply(self, args);
+    if (gameState.mode !== "pvp") return r;
+    $("btn-strip-play-again").classList.add("hidden");
+    $("btn-strip-share").classList.add("hidden");
+    $("btn-strip-giveup").textContent = "Reveal Answer";
+    if (S.phase === "play" && !S.expired) {
+      while (S.reported < gameState.guesses.length) {
+        const i = S.reported++;
+        send({ t: "prog", round: S.round, n: i + 1, row: gameState.evaluations[i] });
+      }
+      if (gameState.status !== "IN_PROGRESS" && !S.doneSent) {
+        S.doneSent = true;
+        const won = gameState.status === "WON";
+        const revealed = !!S.lastRevealed;
+        S.lastRevealed = false;
+        send({ t: "done", round: S.round, outcome: won ? "won" : "failed", revealed, n: gameState.guesses.length });
+        if (S.role === "host") arbitrate("host", won ? "won" : "failed", revealed);
+        if (!won && !S.result) {
+          showToast("Answer: " + S.target.toUpperCase() + " — Waiting for " + S.oppName + "…", 3500);
+        }
+      }
+    }
+    return r;
+  });
+
+  wrap("initGame", (orig, self, args) => {
+    if (gameState.mode === "pvp" && S.phase !== "idle") { showToast("Leave the PvP match first (👥 button)", 1800); return; }
+    return orig.apply(self, args);
+  });
+  wrap("recordGameResult", (orig, self, args) => { if (gameState.mode === "pvp") return; return orig.apply(self, args); });
+  wrap("openModal", (orig, self, args) => { if (args[0] === "modal-stats" && gameState.mode === "pvp") return; return orig.apply(self, args); });
+  wrap("isAnyModalOpen", (orig, self, args) => orig.apply(self, args) || !$("modal-pvp").classList.contains("hidden"));
+  wrap("giveLetterHint", (orig, self, args) => {
+    if (gameState.mode === "pvp") { showToast("Hints are disabled in PvP", 1400); return; }
+    return orig.apply(self, args);
+  });
+  wrap("giveUpRound", (orig, self, args) => {
+    if (gameState.mode === "pvp" && gameState.status === "IN_PROGRESS" && S.phase === "play") {
+      if (!S.giveArm) {
+        S.giveArm = true;
+        showToast("Tap 'Reveal Answer' again to confirm & reveal word", 2200);
+        setTimeout(() => { S.giveArm = false; }, 2500);
+        return;
+      }
+      S.giveArm = false;
+      S.lastRevealed = true;
+    }
+    return orig.apply(self, args);
+  });
+
+  /* ---------------------------------------------------------- leave */
+  function leave() {
+    const wasPvp = gameState.mode === "pvp";
+    teardown();
+    S = newSession();
+    document.body.classList.remove("pvp-on");
+    $("pvp-bar").classList.add("hidden");
+    closePvpModal();
+    showView("menu"); setMsg("");
+    if (wasPvp) initGame("daily", false);
+  }
+
+  /* ---------------------------------------------------------- events */
+  function wire() {
+    $("btn-pvp").addEventListener("click", openForPhase);
+    $("pvp-bar").addEventListener("click", openForPhase);
+    $("pvp-close").addEventListener("click", closePvpModal);
+    $("pvp-view-board").addEventListener("click", closePvpModal);
+    $("modal-pvp").addEventListener("click", (e) => { if (e.target === $("modal-pvp")) closePvpModal(); });
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("modal-pvp").classList.contains("hidden")) closePvpModal(); });
+
+    document.querySelectorAll(".pvp-mode").forEach((b) => b.addEventListener("click", () => {
+      chosenMode = b.getAttribute("data-pmode");
+      document.querySelectorAll(".pvp-mode").forEach((x) => x.classList.toggle("sel", x === b));
+    }));
+
+    $("pvp-create").addEventListener("click", () => {
+      let code = "";
+      for (let i = 0; i < 5; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+      connect(code, "host");
+    });
+    const join = () => {
+      const code = $("pvp-code").value.trim().toUpperCase();
+      if (!/^[A-Z0-9]{5}$/.test(code)) { setMsg("Enter the 5-character room code.", true); return; }
+      connect(code, "guest");
+    };
+    $("pvp-join").addEventListener("click", join);
+    $("pvp-code").addEventListener("input", (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
+    $("pvp-code").addEventListener("keydown", (e) => { if (e.key === "Enter") join(); });
+
+    $("pvp-copy").addEventListener("click", () => {
+      const code = S.code;
+      const done = () => showToast("Code copied: " + code, 1400);
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done).catch(done);
+      else done();
+    });
+
+    $("pvp-setbtn").addEventListener("click", submitSetWord);
+    $("pvp-setword").addEventListener("input", (e) => { e.target.value = e.target.value.toLowerCase().replace(/[^a-z]/g, ""); });
+    $("pvp-setword").addEventListener("keydown", (e) => { if (e.key === "Enter") submitSetWord(); });
+
+    ["pvp-cancel", "pvp-leave-set", "pvp-leave-status", "pvp-leave-result"].forEach((id) => $(id).addEventListener("click", leave));
+    $("pvp-resume").addEventListener("click", closePvpModal);
+    $("pvp-rematch").addEventListener("click", () => {
+      if (S.phase !== "over" || !S.oppPresent) return;
+      if (S.role === "host") beginRound();
+      else { send({ t: "rematch_req" }); $("pvp-result-status").textContent = "Asked the host for a rematch…"; }
+    });
+  }
+
+  buildUI();
+  wire();
+})();
+</script>
+<!-- WORDLE-PVP:END -->
 </body>
 </html>
