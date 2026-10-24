@@ -2676,6 +2676,46 @@
   buildUI();
   wire();
 })();
+
+  // --- MOBILE BACK BUTTON GUARD ---
+let backButtonGuardActive = false;
+
+function enableBackGuard() {
+  if (backButtonGuardActive) return;
+  backButtonGuardActive = true;
+  // Push a dummy state so the back button has something to pop
+  history.pushState({ guard: true }, "", location.href);
+}
+
+function disableBackGuard() {
+  if (!backButtonGuardActive) return;
+  backButtonGuardActive = false;
+  // If we pushed a state, go back once to clear the guard safely
+  if (history.state && history.state.guard) {
+    history.back();
+  }
+}
+
+window.addEventListener("popstate", (e) => {
+  // Check if a game is actively running (Wordle in progress or active PvP match)
+  const isWordleActive = typeof gameState !== "undefined" && gameState.status === "IN_PROGRESS";
+  const isPvpActive = typeof S !== "undefined" && S && S.phase && S.phase !== "idle" && S.phase !== "over";
+
+  if (isWordleActive || isPvpActive) {
+    const confirmExit = window.confirm("Are you sure you want to leave the game? Your current progress will be lost.");
+    if (confirmExit) {
+      // Allow exiting: clean up PvP if active
+      if (typeof leave === "function" && isPvpActive) leave();
+      backButtonGuardActive = false;
+    } else {
+      // User cancelled: re-push the guard state so they stay in the game
+      history.pushState({ guard: true }, "", location.href);
+    }
+  } else {
+    // If no game is active, let them go back normally
+    backButtonGuardActive = false;
+  }
+});
 </script>
 <!-- WORDLE-PVP:END -->
 </body>
