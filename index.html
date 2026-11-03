@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mind Arcade — Schulte Pro · Wordle · Ultimate Chess · Text Clean</title>
+  <title>Mind Arcade — Schulte Pro · Wordle · Ultimate Chess · Text Clean · Notepad</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&family=Libre+Baskerville:wght@700&display=swap" rel="stylesheet">
@@ -22,6 +22,7 @@
       --accent-wordle-alt: #b59f3b;
       --accent-chess: #5fb98a;
       --accent-text: #c8f56a;
+      --accent-notepad: #33ff66;
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --font-serif: 'Libre Baskerville', Georgia, serif;
@@ -302,6 +303,47 @@
       font-size: 18px;
     }
 
+    /* Preview 5: CMD Notepad Terminal */
+    .preview-notepad {
+      width: 210px;
+      background: #000000;
+      border: 1px solid #1b7a34;
+      border-radius: 8px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 18px rgba(51, 255, 102, 0.08);
+    }
+    .pn-bar {
+      background: #06130a;
+      border-bottom: 1px solid #1b7a34;
+      padding: 5px 9px;
+      font-size: 10px;
+      color: #1fa646;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pn-body {
+      padding: 9px 10px;
+      color: var(--accent-notepad);
+      font-size: 11px;
+      line-height: 1.55;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .pn-dim { color: #1fa646; font-size: 10px; }
+    .pn-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 11px;
+      background: var(--accent-notepad);
+      vertical-align: -1px;
+      margin-left: 3px;
+      animation: pnBlink 1s steps(2, start) infinite;
+    }
+    @keyframes pnBlink { to { visibility: hidden; } }
+
     .card-body { display: flex; flex-direction: column; gap: 10px; }
 
     .card-tag-row {
@@ -334,6 +376,8 @@
     .card-title.wordle-font { font-family: var(--font-serif); letter-spacing: 0.01em; }
     .card-title.text-font { font-family: var(--font-mono); letter-spacing: -0.03em; }
     .card-title.text-font span { color: var(--accent-text); }
+    .card-title.notepad-font { font-family: var(--font-mono); letter-spacing: -0.03em; }
+    .card-title.notepad-font span { color: var(--accent-notepad); }
 
     .card-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
 
@@ -380,6 +424,7 @@
     .btn-wordle  { background: var(--accent-wordle); }
     .btn-chess   { background: #2f6f4f; }
     .btn-text    { background: var(--accent-text); color: #0f0f0f; }
+    .btn-notepad { background: var(--accent-notepad); color: #051409; }
 
     /* EMBEDDED GAME STAGE */
     .game-stage {
@@ -435,6 +480,10 @@
         <span>📝</span>
         <span class="label-text">Text Clean</span>
       </button>
+      <button class="nav-pill" data-target="notepad" type="button">
+        <span>💻</span>
+        <span class="label-text">Notepad</span>
+      </button>
     </nav>
 
     <div class="nav-actions">
@@ -445,7 +494,7 @@
   <!-- LANDING PAGE VIEW -->
   <main class="landing-view" id="landingView">
     <section class="hero">
-      <span class="hero-eyebrow">3 Classics + 1 Utility Tool</span>
+      <span class="hero-eyebrow">3 Classics + 2 Utility Tools</span>
       <h1 class="hero-title">Train Focus, Vocabulary &amp; Strategy.</h1>
       <p class="hero-sub">
         Select a game or tool below to launch immediately. All progress, custom themes, statistics, and cloud leaderboards are preserved.
@@ -609,6 +658,41 @@
           <button class="play-btn btn-text" type="button">Launch text.clean &rarr;</button>
         </div>
       </article>
+
+      <!-- TOOL 5: CMD NOTEPAD -->
+      <article class="game-card" data-launch="notepad">
+        <div class="card-preview">
+          <div class="preview-notepad" aria-hidden="true">
+            <div class="pn-bar">
+              <span>C:\NOTES\cmd.md</span>
+              <span>🔒 AES</span>
+            </div>
+            <div class="pn-body">
+              <div><b># Project Notes</b></div>
+              <div>• Indic &amp; Code Fonts</div>
+              <div class="pn-dim">saved to Supabase ✓<span class="pn-cursor"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-tag-row">
+            <span class="card-tag">Cloud Workspace</span>
+            <span class="card-stat" id="statNotepad">Supabase · AES-256</span>
+          </div>
+          <h2 class="card-title notepad-font">cmd<span>.</span>notepad</h2>
+          <p class="card-desc">
+            Command-prompt themed rich-text notepad with Supabase cloud sync, client-side AES-256 note locking, Indic fonts, tables, and sketch pad.
+          </p>
+          <div class="card-features">
+            <span class="feature-chip">Rich Text &amp; Tables</span>
+            <span class="feature-chip">Indic Scripts</span>
+            <span class="feature-chip">.docx / .md Export</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="play-btn btn-notepad" type="button">Launch Notepad &rarr;</button>
+        </div>
+      </article>
     </section>
   </main>
 
@@ -623,7 +707,8 @@
       schulte: "schulte.html",
       wordle: "wordle.html",
       chess: "chess.html",
-      text: "textclean.html"
+      text: "textclean.html",
+      notepad: "notepad.html"
     };
 
     const landingView = document.getElementById("landingView");
@@ -633,7 +718,16 @@
 
     let activeGame = "home";
 
-    function switchView(target, querySuffix = "") {
+    async function switchView(target, querySuffix = "") {
+      // If leaving Notepad, flush any unsaved changes to Supabase first
+      if (activeGame === "notepad" && target !== "notepad") {
+        try {
+          if (gameFrame.contentWindow && typeof gameFrame.contentWindow.flush === "function") {
+            await gameFrame.contentWindow.flush(true);
+          }
+        } catch (_) {}
+      }
+
       activeGame = target;
 
       navPills.forEach(pill => {
