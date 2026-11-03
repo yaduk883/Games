@@ -14,7 +14,7 @@
 
   Then Authentication > Providers > Email: keep enabled. Create your account from the login screen.
 -->
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -22,9 +22,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=VT323&family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&family=Noto+Sans+Kannada&family=Noto+Sans+Malayalam&family=Noto+Sans+Bengali&family=Noto+Sans+Gujarati&family=Noto+Sans+Gurmukhi&display=swap" rel="stylesheet" />
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#fff;--bg2:#f1f1f1;--fg:#111;--dim:#555;--bd:#bbb;--ac:#0a6a2a;--sel:#cfe8ff;color-scheme:light;--ui:'Fira Code','Courier New',ui-monospace,monospace}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--bg2:#06130a;--fg:#33ff66;--dim:#1fa646;--bd:#1b7a34;--ac:#33ff66;--sel:#0b5a22;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#000;--bg2:#06130a;--fg:#33ff66;--dim:#1fa646;--bd:#1b7a34;--ac:#33ff66;--sel:#0b5a22;color-scheme:dark}
+:root{--bg:#000;--bg2:#06130a;--fg:#33ff66;--dim:#1fa646;--bd:#1b7a34;--ac:#33ff66;--sel:#0b5a22;color-scheme:dark;--ui:'Fira Code','Courier New',ui-monospace,monospace}
+:root[data-theme="light"]{--bg:#fff;--bg2:#f1f1f1;--fg:#111;--dim:#555;--bd:#bbb;--ac:#0a6a2a;--sel:#cfe8ff;color-scheme:light}
 html,body{height:100%}body{background:var(--bg);color:var(--fg);font:13px var(--ui)}
 .app{height:100%;display:grid;grid-template-columns:230px 1fr;grid-template-rows:auto 1fr auto}
 header{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--bd);background:var(--bg2)}
@@ -42,14 +41,12 @@ input:focus,select:focus,textarea:focus{outline:1px solid var(--ac)}
 .panel.show{display:flex}.panel textarea{width:100%;height:110px}.panel input[type=number]{width:70px}
 .panel label{display:flex;gap:6px;align-items:center}.sec{width:100%;border-top:1px solid var(--bd);padding-top:6px;color:var(--dim)}
 #pSet{max-height:45vh;overflow:auto}
-.panel canvas{border:1px dashed var(--bd);background:var(--bg2);max-width:100%;touch-action:none;cursor:crosshair}
 input[type=color]{padding:0;width:30px;height:26px;cursor:pointer}
 #ed{flex:1;overflow:auto;padding:16px;outline:none;line-height:1.65;caret-color:var(--ac);word-break:break-word;
  font-family:'Fira Code','Noto Sans Devanagari','Noto Sans Tamil','Noto Sans Telugu','Noto Sans Kannada','Noto Sans Malayalam','Noto Sans Bengali','Noto Sans Gujarati','Noto Sans Gurmukhi',monospace}
 #ed h1{font-size:1.7em;margin:.5em 0}#ed h2{font-size:1.4em;margin:.5em 0}#ed h3{font-size:1.15em;margin:.5em 0}
 #ed ul,#ed ol{margin:.4em 0 .4em 1.6em}#ed a{color:var(--ac);text-decoration:underline}#ed img{max-width:100%}
 #ed table{border-collapse:collapse;margin:.6em 0}#ed td,#ed th{border:1px solid var(--bd);padding:6px 10px;min-width:60px}
-#ed [style*="background-color"]{color:#000}#ed [style*="transparent"]{color:inherit}
 ::selection{background:var(--sel)}
 footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px solid var(--bd);background:var(--bg2);color:var(--dim);font-size:11px;flex-wrap:wrap}
 #ed:empty::before{content:'start typing…';color:var(--dim)}
@@ -102,7 +99,6 @@ footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px so
   <div class="mi"><button onclick="menu(this)">Insert</button><div class="dd">
    <button onclick="closeMenus();openPanel('pLink')">Link…</button>
    <button onclick="closeMenus();openPanel('pTable')">Table…</button>
-   <button onclick="closeMenus();openPanel('pDraw')">Drawing…</button>
   </div></div>
   <div class="mi"><button onclick="menu(this)">View</button><div class="dd">
    <button onclick="closeMenus();togBar()">Show / hide toolbar</button>
@@ -124,13 +120,12 @@ footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px so
    <button data-c="italic" title="Italic (Ctrl+I)"><i>I</i></button>
    <button data-c="underline" title="Underline (Ctrl+U)"><u>U</u></button>
    <button data-c="strikeThrough" title="Strikethrough"><s>S</s></button>
-   <input type="color" id="hlc" value="#ffe600" title="Highlight colour" onchange="hilite()"><button onclick="hilite()">highlight</button><button onclick="hilite(1)">no hl</button>
-   <input type="color" id="fgc" value="#ff5555" title="Text colour" onchange="textColor()"><button onclick="textColor()">colour</button>
+   <input type="color" id="hlc" value="#0b5a22" title="Highlight colour" onchange="toggleHighlight(true)"><button onclick="toggleHighlight()">highlight</button>
+   <input type="color" id="fgc" value="#33ff66" title="Text colour" onchange="textColor()"><button onclick="textColor()">colour</button>
    <button data-c="insertUnorderedList">• list</button>
    <button data-c="insertOrderedList">1. list</button>
    <button onclick="openPanel('pLink')">link</button>
    <button onclick="openPanel('pTable')">table</button>
-   <button onclick="openPanel('pDraw')">draw</button>
    <select id="font" title="Font (selected text, or whole note if nothing selected)">
     <option value="">Font…</option>
     <option value="'Fira Code',monospace">Fira Code</option>
@@ -155,8 +150,6 @@ footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px so
    <p style="width:100%;color:var(--dim)">Encrypted on this device (AES-256) before it is sent to Supabase. If you forget the password the note cannot be recovered. Leaving a locked note locks it again.</p></div>
   <div class="panel" id="pRename"><input id="rnIn" placeholder="note name" style="flex:1;min-width:160px"><button onclick="rnGo()">rename</button><button onclick="openPanel()">cancel</button><span style="color:var(--dim)">names are not encrypted, even on locked notes</span></div>
   <div class="panel" id="pSaveAs"><input id="saName" placeholder="file name" style="flex:1;min-width:160px"><select id="saFmt"><option value="txt">.txt</option><option value="md">.md</option><option value="docx">.docx</option><option value="html">.html</option></select><button onclick="saveAs()">save file</button><button onclick="openPanel()">cancel</button></div>
-  <div class="panel" id="pDraw"><canvas id="cv" width="640" height="300"></canvas>
-   <div style="width:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input type="color" id="dpc" value="#33ff66"><label>size <input type="range" id="dps" min="1" max="24" value="3"></label><button onclick="dtool='pen'">pen</button><button onclick="dtool='eraser'">eraser</button><button onclick="drClear()">clear</button><button onclick="drInsert()">insert into note</button><button onclick="openPanel()">close</button></div></div>
   <div class="panel" id="pFind"><input id="fq" placeholder="find" oninput="fi=-1;$('fcount').textContent=fMatches().length+' matches'" onkeydown="if(event.key==='Enter')fGo(1)">
    <span id="frRow" style="display:contents"><input id="frp" placeholder="replace with"><button onclick="fRep()">replace</button><button onclick="fAll()">replace all</button></span>
    <label><input type="checkbox" id="fcs"> match case</label><button onclick="fGo(-1)">prev</button><button onclick="fGo(1)">next</button><span id="fcount"></span><button onclick="openPanel()">close</button></div>
@@ -185,31 +178,29 @@ footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px so
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-/* NOTHING is kept in the browser: no localStorage, sessionStorage, IndexedDB or cookies. Everything lives in Supabase. */
 const URLB='https://hzmellvadxmlfvxlyolb.supabase.co',KEY='sb_publishable__ucEOIATPG3LAhGLgS0WVA_8v-4ZByq';
 const $=id=>document.getElementById(id),ed=$('ed'),aside=$('aside'),APP=$('app'),st=m=>$('st').textContent=m;
 let tok=null,rtok=null,uid=null,email='',rt=null,notes=[],cur=null,timer=null,dirty=false,saveQ=Promise.resolve(),delArm=0,rng=null,NM='',cfgT=null,fi=-1,spell=true,ac=true,fs=15;
 const KEYS={};
-let CFG={auto:600,tab:2,stat:true,idle:10,ac:'',theme:'',bar:false,side:false,fs:15,spell:true,acOn:true,lang:'en'},CUSTOM={};
+let CFG={auto:600,tab:2,stat:true,idle:10,ac:'',theme:'dark',bar:false,side:false,fs:15,spell:true,acOn:true,lang:'en'},CUSTOM={};
 const LANGS=[['en','English'],['hi','Hindi'],['mr','Marathi'],['ta','Tamil'],['te','Telugu'],['kn','Kannada'],['ml','Malayalam'],['bn','Bengali'],['gu','Gujarati'],['pa','Punjabi'],['ur','Urdu'],['ar','Arabic'],['fr','French'],['de','German'],['es','Spanish'],['ja','Japanese'],['zh','Chinese']];
 $('lang').innerHTML=LANGS.map(l=>`<option value="${l[0]}">${l[1]}</option>`).join('');
 const FIX={teh:'the',hte:'the',adn:'and',taht:'that',thsi:'this',yuo:'you',jsut:'just',recieve:'receive',becuase:'because',definately:'definitely',wich:'which',thier:'their',seperate:'separate',occured:'occurred',untill:'until',alot:'a lot',wierd:'weird',goverment:'government',tommorow:'tomorrow',accomodate:'accommodate',beleive:'believe',freind:'friend',adress:'address',dont:'don’t',cant:'can’t',wont:'won’t',doesnt:'doesn’t',didnt:'didn’t',im:'I’m',ive:'I’ve',i:'I'};
 
-/* ---------- Supabase ---------- */
 async function api(path,o={},retry=true){
  const h={apikey:KEY,'Content-Type':'application/json',...(o.headers||{})};if(tok&&!path.startsWith('/auth/'))h.Authorization='Bearer '+tok;
- let r;try{r=await fetch(URLB+path,{...o,headers:h})}catch(e){throw new Error('cannot reach Supabase. Check your internet, and open this file from your computer or your own website.')}
+ let r;try{r=await fetch(URLB+path,{...o,headers:h})}catch(e){throw new Error('cannot reach Supabase.')}
  if(r.status===401&&retry&&rtok&&!path.startsWith('/auth/')){await refresh();return api(path,o,false)}
  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
  if(!r.ok)throw new Error((j&&(j.message||j.msg||j.error_description||j.error))||t||('HTTP '+r.status));
  return j}
-function session(d){tok=d.access_token;rtok=d.refresh_token;uid=d.user.id;email=d.user.email||'';clearTimeout(rt);rt=setTimeout(()=>refresh().catch(()=>st('session expired: sign in again')),Math.max(30,(d.expires_in||3600)-90)*1000)}
+function session(d){tok=d.access_token;rtok=d.refresh_token;uid=d.user.id;email=d.user.email||'';clearTimeout(rt);rt=setTimeout(()=>refresh().catch(()=>st('session expired')),Math.max(30,(d.expires_in||3600)-90)*1000)}
 async function refresh(){session(await api('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:rtok})},false))}
 async function auth(kind){const em=$('lem').value.trim(),pw=$('lpw').value,m=$('lmsg');
- if(!em||pw.length<6){m.textContent='enter your email and a password of 6+ characters';return}
+ if(!em||pw.length<6){m.textContent='enter email and 6+ char password';return}
  m.textContent='working…';
  try{const d=await api(kind==='in'?'/auth/v1/token?grant_type=password':'/auth/v1/signup',{method:'POST',body:JSON.stringify({email:em,password:pw})});
-  if(!d.access_token){m.textContent='account created. Confirm the email Supabase sent you, then sign in.';return}
+  if(!d.access_token){m.textContent='account created. Confirm email, then sign in.';return}
   $('lpw').value='';session(d);await start()}catch(e){m.textContent=e.message}}
 function put(rows){saveQ=saveQ.catch(()=>{}).then(()=>api('/rest/v1/notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)}));return saveQ}
 const save1=n=>put([{id:n.id,data:n,t:n.t}]);
@@ -217,10 +208,9 @@ async function start(){
  try{const rows=await api('/rest/v1/notes?select=id,data&order=t.desc&limit=2000');
   notes=[];rows.forEach(r=>{if(r.id==='settings:'+uid)Object.assign(CFG,(r.data||{}).cfg||{});else if(r.data&&r.data.id)notes.push(r.data)});
   $('login').style.display='none';applyCfg();if(!notes.length)notes.push(mk());cur=notes[0];await show()}
- catch(e){$('login').style.display='flex';$('lmsg').textContent=e.message+(/notes/.test(e.message)?' (run the SQL setup from the top of this file first)':'')}}
+ catch(e){$('login').style.display='flex';$('lmsg').textContent=e.message}}
 function signOut(){tok=rtok=null;location.reload()}
 
-/* ---------- notes ---------- */
 const mk=()=>({id:'n'+(crypto.randomUUID?crypto.randomUUID():Date.now()+''+Math.random()),html:'',font:'',t:Date.now()});
 async function flush(force){if(!cur||!tok)return;clearTimeout(timer);const n=cur,h=ed.innerHTML;
  if(!force&&!dirty)return;
@@ -255,19 +245,18 @@ async function delNote(){const n=cur;
  try{await api('/rest/v1/notes?id=eq.'+encodeURIComponent(n.id),{method:'DELETE'})}catch(e){st('delete failed: '+e.message);return}
  notes=notes.filter(x=>x!==n);delete KEYS[n.id];if(!notes.length)notes.push(mk());cur=notes[0];dirty=false;show()}
 let wipeArm=0;
-function wipe(){const b=$('wipeBtn');if(!wipeArm){wipeArm=1;b.textContent='sure? this deletes every note';setTimeout(()=>{wipeArm=0;b.textContent='erase all notes (from Supabase)'},3000);return}
+function wipe(){const b=$('wipeBtn');if(!wipeArm){wipeArm=1;b.textContent='sure? deletes all notes';setTimeout(()=>{wipeArm=0;b.textContent='erase all notes (from Supabase)'},3000);return}
  wipeArm=0;b.textContent='erase all notes (from Supabase)';
  api('/rest/v1/notes?id=not.like.settings:*',{method:'DELETE'}).then(()=>{for(const k in KEYS)delete KEYS[k];notes=[mk()];cur=notes[0];dirty=false;show();st('all notes erased')}).catch(e=>st('erase failed: '+e.message))}
 function rnGo(){const v=$('rnIn').value.trim();if(v)cur.name=v;else delete cur.name;cur.t=Date.now();save1(cur).then(()=>st('renamed ✓')).catch(e=>st('rename failed: '+e.message));renderList();openPanel()}
 
-/* ---------- settings (stored in Supabase) ---------- */
 function parseAC(){CUSTOM={};(CFG.ac||'').split('\n').forEach(l=>{const p=l.split('=');if(p[0]&&p[1])CUSTOM[p[0].trim().toLowerCase()]=p.slice(1).join('=').trim()})}
 function applyCfg(){spell=CFG.spell!==false;ac=CFG.acOn!==false;fs=CFG.fs||15;ed.style.fontSize=fs+'px';
  if(CFG.theme)document.documentElement.dataset.theme=CFG.theme;$('lang').value=CFG.lang||'en';setLang(true);
  APP.classList.toggle('nobar',!!CFG.bar);APP.classList.toggle('noside',!!CFG.side);APP.classList.toggle('nostat',CFG.stat===false);
  parseAC();$('cAuto').value=CFG.auto;$('cTab').value=CFG.tab;$('cStat').checked=CFG.stat!==false;$('cIdle').value=CFG.idle;$('cAC').value=CFG.ac||'';$('acct').textContent='signed in as '+email;applyFlags()}
 function pushCfg(){CFG.fs=fs;CFG.spell=spell;CFG.acOn=ac;CFG.lang=$('lang').value;CFG.bar=APP.classList.contains('nobar');CFG.side=APP.classList.contains('noside');CFG.theme=document.documentElement.dataset.theme||'';
- clearTimeout(cfgT);cfgT=setTimeout(()=>put([{id:'settings:'+uid,data:{cfg:CFG},t:Date.now()}]).catch(e=>st('settings not saved: '+e.message)),700)}
+ clearTimeout(cfgT);cfgT=setTimeout(()=>put([{id:'settings:'+uid,data:{cfg:CFG},t:Date.now()}]).catch(e=>st('settings not saved')),700)}
 function saveCfg(){CFG.auto=Math.max(200,+$('cAuto').value||600);CFG.tab=+$('cTab').value||2;CFG.stat=$('cStat').checked;CFG.idle=Math.max(0,+$('cIdle').value||0);CFG.ac=$('cAC').value;
  parseAC();APP.classList.toggle('nostat',!CFG.stat);pushCfg();st('settings saved ✓')}
 function applyFlags(){ed.spellcheck=spell;$('spBtn').textContent='Spell check: '+(spell?'ON':'OFF');$('acBtn').textContent='Auto-correct: '+(ac?'ON':'OFF')}
@@ -280,8 +269,7 @@ function size(d){fs=Math.min(40,Math.max(10,fs+d*2));ed.style.fontSize=fs+'px';p
 function togBar(){APP.classList.toggle('nobar');pushCfg()}
 function togSide(){if(matchMedia('(max-width:700px)').matches)aside.classList.toggle('open');else{APP.classList.toggle('noside');pushCfg()}}
 
-/* ---------- panels & formatting ---------- */
-const PANELS=['pLink','pTable','pBackup','pLock','pSet','pRename','pSaveAs','pDraw','pFind'];
+const PANELS=['pLink','pTable','pBackup','pLock','pSet','pRename','pSaveAs','pFind'];
 function openPanel(id){PANELS.forEach(p=>$(p).classList.toggle('show',p===id));
  if(id==='pLink'){const s=rng?rng.toString():'';$('lt').value=s;$('lu').value='';$(s?'lu':'lt').focus()}}
 function togglePanel(id){openPanel($(id).classList.contains('show')?null:id)}
@@ -289,7 +277,21 @@ document.addEventListener('selectionchange',()=>{const s=getSelection();if(s.ran
 function restoreSel(){ed.focus();if(rng){const s=getSelection();s.removeAllRanges();s.addRange(rng)}}
 function cmd(c,v){restoreSel();document.execCommand(c,false,v||null);changed()}
 function styled(c,v){restoreSel();document.execCommand('styleWithCSS',false,true);document.execCommand(c,false,v);document.execCommand('styleWithCSS',false,false);changed()}
-function hilite(rem){styled('hiliteColor',rem?'transparent':$('hlc').value)}
+
+/* Single Highlight Toggle: applies colour if unhighlighted, removes highlight if already highlighted */
+function toggleHighlight(forceColor){
+  restoreSel();
+  const sel=getSelection();
+  if(!sel.rangeCount)return;
+  const parent=sel.anchorNode.parentElement;
+  const isHighlighted=parent&&parent.style&&parent.style.backgroundColor;
+  if(isHighlighted && !forceColor){
+    styled('hiliteColor','transparent');
+  }else{
+    styled('hiliteColor',$('hlc').value);
+  }
+}
+
 function textColor(){styled('foreColor',$('fgc').value)}
 $('bar').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
 document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>cmd(b.dataset.c));
@@ -299,21 +301,21 @@ function doLink(){let u=$('lu').value.trim(),t=$('lt').value.trim()||u;if(!u)ret
  const a=document.createElement('a');a.href=u;a.textContent=t;a.rel='noopener noreferrer';a.target='_blank';restoreSel();document.execCommand('insertHTML',false,a.outerHTML+'&nbsp;');openPanel();changed()}
 function doTable(){const r=Math.min(30,+$('tr').value||2),c=Math.min(12,+$('tc').value||2);let h='<table>';for(let i=0;i<r;i++){h+='<tr>';for(let j=0;j<c;j++)h+='<td><br></td>';h+='</tr>'}
  restoreSel();document.execCommand('insertHTML',false,h+'</table><p><br></p>');openPanel();changed()}
+
 ed.addEventListener('input',e=>{
  if(ac&&e.inputType==='insertText'&&e.data===' '){const s=getSelection(),n=s.anchorNode,o=s.anchorOffset;
-  if(n&&n.nodeType===3){const m=n.textContent.slice(0,o).match(/(?:^|[^A-Za-z'’])([A-Za-z'’]+)[\s\u00a0]$/);
+  if(n&&n.nodeType===3){const m=n.textContent.slice(0,o).match(/(?:^|[^\p{L}\p{M}'’])([\p{L}\p{M}'’]+)[\s\u00a0]$/u);
    if(m){const w=m[1];let rep=CUSTOM[w.toLowerCase()]||FIX[w.toLowerCase()];
     if(rep&&(w.toLowerCase()!=='i'||w==='i')){if(w.length>1&&w[0]===w[0].toUpperCase())rep=rep[0].toUpperCase()+rep.slice(1);
      const r=document.createRange();r.setStart(n,o-1-w.length);r.setEnd(n,o);s.removeAllRanges();s.addRange(r);document.execCommand('insertText',false,rep+' ')}}}}
  changed()});
-ed.addEventListener('paste',e=>{e.preventDefault();document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text/plain'))});
+ed.addEventListener('paste',e=>{e.preventDefault();const cd=e.clipboardData||window.clipboardData;const html=cd.getData('text/html');if(html)document.execCommand('insertHTML',false,clean(html));else document.execCommand('insertText',false,cd.getData('text/plain'))});
 ed.addEventListener('click',e=>{const a=e.target.closest('a');if(a&&(e.ctrlKey||e.metaKey))window.open(a.href,'_blank','noopener')});
 ed.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();document.execCommand('insertText',false,' '.repeat(CFG.tab))}});
 document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey))return;const k=e.key.toLowerCase();if(k==='s'){e.preventDefault();flush(true)}if(k==='f'){e.preventDefault();openFind(0)}});
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
 
-/* ---------- find / replace ---------- */
 function openFind(rep){openPanel('pFind');$('frRow').style.display=rep?'contents':'none';$('fq').focus();$('fq').select()}
 function fMatches(){const q=$('fq').value;if(!q)return[];const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),$('fcs').checked?'g':'gi'),out=[],w=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);let n,m;
  while(n=w.nextNode()){re.lastIndex=0;while((m=re.exec(n.data)))out.push([n,m.index,m[0].length])}return out}
@@ -322,7 +324,6 @@ function fGo(d){const a=fMatches();$('fcount').textContent=a.length+' matches';i
 function fRep(){const a=fMatches();if(!a.length)return;if(fi<0||fi>=a.length)fi=0;fSel(a[fi]);ed.focus();document.execCommand('insertText',false,$('frp').value);changed();fi--;fGo(1)}
 function fAll(){const a=fMatches();if(!a.length)return;ed.focus();const rp=$('frp').value;for(let i=a.length-1;i>=0;i--){fSel(a[i]);document.execCommand('insertText',false,rp)}changed();$('fcount').textContent='replaced '+a.length}
 
-/* ---------- password lock (PBKDF2 + AES-GCM, done before upload) ---------- */
 const b64=b=>{let s='';new Uint8Array(b).forEach(c=>s+=String.fromCharCode(c));return btoa(s)},unb=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 async function derive(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
 async function enc(n,html,k){const iv=crypto.getRandomValues(new Uint8Array(12));n.iv=b64(iv);n.ct=b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(html)));n.html=''}
@@ -343,7 +344,6 @@ async function relockAll(){await flush();for(const k in KEYS)delete KEYS[k];if(c
 let lastAct=Date.now();['keydown','pointerdown','mousemove'].forEach(t=>document.addEventListener(t,()=>lastAct=Date.now(),{passive:true}));
 setInterval(()=>{if(CFG.idle>0&&Date.now()-lastAct>CFG.idle*60000&&Object.keys(KEYS).length)relockAll()},15000);
 
-/* ---------- menus ---------- */
 function closeMenus(){document.querySelectorAll('.dd.show').forEach(d=>d.classList.remove('show'))}
 function menu(b){const d=b.nextElementSibling,on=d.classList.contains('show');closeMenus();if(!on)d.classList.add('show')}
 document.addEventListener('click',e=>{if(!e.target.closest('.mi')&&!e.target.closest('.rm'))closeMenus()});
@@ -357,7 +357,6 @@ function rowMenu(btn){const n=cur;RM.innerHTML='';
  it('Delete',b=>{if(!delArm){delArm=1;b.textContent='Sure? click again';setTimeout(()=>delArm=0,3000);return}delArm=0;closeMenus();delNote()});
  const r=btn.getBoundingClientRect();RM.style.left=Math.max(4,Math.min(r.left,innerWidth-240))+'px';RM.style.top=r.bottom+'px';RM.classList.add('show')}
 
-/* ---------- open / export ---------- */
 function txtToHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').split(/\r?\n/).map(l=>'<div>'+(l||'<br>')+'</div>').join('')}
 function mdToHtml(t){const E=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
  const inl=s=>E(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/~~(.+?)~~/g,'<s>$1</s>').replace(/\[(.+?)\]\((https?:[^)\s]+)\)/g,'<a href="$2">$1</a>');
@@ -370,7 +369,7 @@ function mdToHtml(t){const E=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 async function openFile(f){if(f.size>2000000){st(f.name+' is over 2 MB');return}
  const t=await f.text(),x=f.name.split('.').pop().toLowerCase();
  const h=/^html?$/.test(x)?clean(t):/^(md|markdown)$/.test(x)?mdToHtml(t):txtToHtml(t);
- await flush();const n=mk();n.html=h;n.name=f.name;notes.push(n);cur=n;dirty=false;await show();try{await save1(n);st('opened and saved '+f.name)}catch(e){st('SAVE FAILED: '+e.message)}}
+ await flush();const n=mk();n.html=h;n.name=f.name;notes.push(n);cur=n;dirty=false;await show();try{await save1(n);st('opened '+f.name)}catch(e){st('SAVE FAILED: '+e.message)}}
 $('openIn').onchange=async e=>{for(const f of e.target.files)await openFile(f);e.target.value=''};
 ed.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files'))e.preventDefault()});
 ed.addEventListener('drop',async e=>{if(e.dataTransfer.files.length){e.preventDefault();for(const f of e.dataTransfer.files)await openFile(f)}});
@@ -378,7 +377,7 @@ function saveFile(name,data,type){const a=document.createElement('a'),u=URL.crea
 function fullHtml(){return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+title(cur).replace(/</g,'')+'</title><style>body{font-family:system-ui,"Noto Sans Devanagari",sans-serif;max-width:800px;margin:2em auto;line-height:1.6;color:#111}table{border-collapse:collapse}td{border:1px solid #888;padding:4px 8px}img{max-width:100%}</style></head><body>'+ed.innerHTML+'</body></html>'}
 function md(n){if(n.nodeType===3)return n.textContent.replace(/\u00a0/g,' ');if(n.nodeType!==1)return '';const k=()=>[...n.childNodes].map(md).join('');
  switch(n.tagName){case 'B':case 'STRONG':return '**'+k()+'**';case 'I':case 'EM':return '*'+k()+'*';case 'S':case 'STRIKE':return '~~'+k()+'~~';case 'U':return '<u>'+k()+'</u>';
- case 'A':return '['+k()+']('+n.getAttribute('href')+')';case 'BR':return '\n';case 'IMG':return '[drawing]';
+ case 'A':return '['+k()+']('+n.getAttribute('href')+')';case 'BR':return '\n';case 'IMG':return '[image]';
  case 'H1':return '# '+k()+'\n\n';case 'H2':return '## '+k()+'\n\n';case 'H3':return '### '+k()+'\n\n';
  case 'UL':return [...n.children].map(li=>'- '+md(li).trim()).join('\n')+'\n\n';
  case 'OL':return [...n.children].map((li,i)=>(i+1)+'. '+md(li).trim()).join('\n')+'\n\n';
@@ -405,7 +404,7 @@ async function toDocx(){if(!window.JSZip)throw new Error('Word library not loade
  return z.generateAsync({type:'blob'})}
 function printPdf(){try{const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);
  f.contentDocument.open();f.contentDocument.write(fullHtml());f.contentDocument.close();
- setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){st('print blocked: export .html and print it')}},400)}catch(e){st('print blocked: export .html and print it')}}
+ setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){st('print blocked')}},400)}catch(e){st('print blocked')}}
 async function exp(f){if(cur.locked&&!KEYS[cur.id])return;
  const base=(NM||title(cur).replace(/^🔒 /,'')).replace(/[\\/:*?"<>|]+/g,'').trim().slice(0,40)||'note';
  try{if(f==='txt')saveFile(base+'.txt',ed.innerText,'text/plain');
@@ -416,21 +415,11 @@ async function exp(f){if(cur.locked&&!KEYS[cur.id])return;
 function openSaveAs(){if(cur.locked&&!KEYS[cur.id])return;$('saName').value=title(cur).replace(/^🔒 /,'').replace(/[\\/:*?"<>|]+/g,'').slice(0,40);openPanel('pSaveAs');$('saName').select()}
 function saveAs(){NM=$('saName').value.replace(/\.(txt|md|docx|html)$/i,'').trim();exp($('saFmt').value);NM='';openPanel()}
 
-/* ---------- backup ---------- */
 function fillBackup(){flush();$('bk').value=JSON.stringify({app:'notepad',notes})}
 function copyBk(){$('bk').select();try{document.execCommand('copy');st('backup copied ✓')}catch(e){}}
 function restore(){try{const d=JSON.parse($('bk').value);if(!Array.isArray(d.notes))throw 0;let a=0;
- d.notes.forEach(n=>{if(n&&typeof n.html==='string'&&!notes.some(x=>x.id===n.id)){const m={...n,id:String(n.id||mk().id),t:n.t||Date.now()};notes.push(m);save1(m).catch(e=>st('SAVE FAILED: '+e.message));a++}});
- renderList();st('restored '+a+' note(s)')}catch(e){st('that is not a valid backup')}}
-
-/* ---------- drawing ---------- */
-const cv=$('cv'),cx=cv.getContext('2d');let dtool='pen',drawing=false;
-function dpos(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]}
-cv.addEventListener('pointerdown',e=>{drawing=true;cv.setPointerCapture(e.pointerId);const[x,y]=dpos(e);cx.lineCap=cx.lineJoin='round';cx.lineWidth=+$('dps').value*(dtool==='eraser'?4:1);cx.globalCompositeOperation=dtool==='eraser'?'destination-out':'source-over';cx.strokeStyle=$('dpc').value;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+.01,y);cx.stroke()});
-cv.addEventListener('pointermove',e=>{if(!drawing)return;const[x,y]=dpos(e);cx.lineTo(x,y);cx.stroke();cx.beginPath();cx.moveTo(x,y)});
-['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,()=>drawing=false));
-function drClear(){cx.clearRect(0,0,cv.width,cv.height)}
-function drInsert(){restoreSel();document.execCommand('insertHTML',false,'<img src="'+cv.toDataURL('image/png')+'" alt="drawing"><br>');openPanel();changed()}
+ d.notes.forEach(n=>{if(n&&typeof n.html==='string'&&!notes.some(x=>x.id===n.id)){const m={...n,id:String(n.id||mk().id),t:n.t||Date.now()};notes.push(m);save1(m).catch(e=>st('SAVE FAILED'));a++}});
+ renderList();st('restored '+a+' note(s)')}catch(e){st('invalid backup')}}
 </script>
 </body>
 </html>
