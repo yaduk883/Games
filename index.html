@@ -12,7 +12,6 @@
       --bg-base: #09090b;
       --bg-card: #121215;
       --bg-card-hover: #18181c;
-      --bg-nav: rgba(18, 18, 21, 0.88);
       --border-subtle: #27272a;
       --border-hover: #3f3f46;
       --text-main: #fafafa;
@@ -38,94 +37,6 @@
       font-family: var(--font-sans);
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
-    }
-
-    /* TOP NAVIGATION BAR */
-    .hub-navbar {
-      height: 56px;
-      background: var(--bg-nav);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .hub-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 900;
-      font-size: 16px;
-      letter-spacing: -0.02em;
-      cursor: pointer;
-      color: var(--text-main);
-      text-decoration: none;
-      background: none;
-      border: none;
-    }
-
-    .hub-brand-badge {
-      width: 28px;
-      height: 28px;
-      border-radius: 7px;
-      background: linear-gradient(135deg, #16a34a, #5fb98a);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: #09090b;
-      font-family: var(--font-mono);
-      font-weight: 800;
-      font-size: 14px;
-    }
-
-    .nav-switcher {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: #09090b;
-      padding: 4px;
-      border-radius: 10px;
-      border: 1px solid var(--border-subtle);
-    }
-
-    .nav-pill {
-      font-family: var(--font-sans);
-      background: transparent;
-      color: var(--text-muted);
-      border: none;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      border-radius: 7px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-    }
-
-    .nav-pill:hover { color: var(--text-main); }
-    .nav-pill.active { background: #27272a; color: #ffffff; }
-
-    .nav-actions { display: flex; align-items: center; gap: 8px; }
-
-    .player-pill {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-muted);
-      background: #18181b;
-      border: 1px solid var(--border-subtle);
-      padding: 6px 12px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
     }
 
     /* LANDING PAGE VIEW */
@@ -426,10 +337,10 @@
     .btn-text    { background: var(--accent-text); color: #0f0f0f; }
     .btn-notepad { background: var(--accent-notepad); color: #051409; }
 
-    /* EMBEDDED GAME STAGE */
+    /* EMBEDDED GAME STAGE (FULL SCREEN) */
     .game-stage {
       width: 100%;
-      height: calc(100dvh - 56px);
+      height: 100dvh;
       position: relative;
       background: #09090b;
     }
@@ -442,54 +353,9 @@
       border: none;
       display: block;
     }
-
-    @media (max-width: 760px) {
-      .hub-navbar { padding: 0 12px; }
-      .player-pill { display: none; }
-      .nav-pill span.label-text { display: none; }
-    }
   </style>
 </head>
 <body>
-
-  <!-- UNIFIED TOP BAR -->
-  <header class="hub-navbar">
-    <button class="hub-brand" id="homeBrandBtn" type="button" title="Back to Game Hub">
-      <span class="hub-brand-badge">M</span>
-      <span>MIND ARCADE</span>
-    </button>
-
-    <nav class="nav-switcher" aria-label="Game Switcher">
-      <button class="nav-pill active" data-target="home" type="button">
-        <span>🏠</span>
-        <span class="label-text">Hub</span>
-      </button>
-      <button class="nav-pill" data-target="schulte" type="button">
-        <span>⚡</span>
-        <span class="label-text">Schulte Pro</span>
-      </button>
-      <button class="nav-pill" data-target="wordle" type="button">
-        <span>🟩</span>
-        <span class="label-text">Wordle</span>
-      </button>
-      <button class="nav-pill" data-target="chess" type="button">
-        <span>♞</span>
-        <span class="label-text">Ultimate Chess</span>
-      </button>
-      <button class="nav-pill" data-target="text" type="button">
-        <span>📝</span>
-        <span class="label-text">Text Clean</span>
-      </button>
-      <button class="nav-pill" data-target="notepad" type="button">
-        <span>💻</span>
-        <span class="label-text">Notepad</span>
-      </button>
-    </nav>
-
-    <div class="nav-actions">
-      <div class="player-pill" id="hubPlayerBadge">👤 Guest</div>
-    </div>
-  </header>
 
   <!-- LANDING PAGE VIEW -->
   <main class="landing-view" id="landingView">
@@ -702,7 +568,6 @@
   </section>
 
   <script>
-    // Map each tool key to its unmodified HTML file
     const GAME_URLS = {
       schulte: "schulte.html",
       wordle: "wordle.html",
@@ -714,12 +579,10 @@
     const landingView = document.getElementById("landingView");
     const gameStage = document.getElementById("gameStage");
     const gameFrame = document.getElementById("gameFrame");
-    const navPills = document.querySelectorAll(".nav-pill");
 
     let activeGame = "home";
 
-    async function switchView(target, querySuffix = "") {
-      // If leaving Notepad, flush any unsaved changes to Supabase first
+    async function switchView(target, querySuffix = "", pushHistory = true) {
       if (activeGame === "notepad" && target !== "notepad") {
         try {
           if (gameFrame.contentWindow && typeof gameFrame.contentWindow.flush === "function") {
@@ -730,25 +593,25 @@
 
       activeGame = target;
 
-      navPills.forEach(pill => {
-        pill.classList.toggle("active", pill.dataset.target === target);
-      });
-
       if (target === "home") {
         gameStage.classList.add("hidden");
         landingView.classList.remove("hidden");
         gameFrame.src = "about:blank";
         refreshLocalStats();
+        if (pushHistory && location.hash) history.pushState({ target: "home" }, "", location.pathname + location.search);
         return;
       }
 
       const fileUrl = GAME_URLS[target];
       if (!fileUrl) return;
 
+      if (pushHistory) {
+        history.pushState({ target }, "", `#${target}`);
+      }
+
       landingView.classList.add("hidden");
       gameStage.classList.remove("hidden");
 
-      // If embedded srcdoc templates exist (from a bundler), use srcdoc; otherwise load the file URL
       const tpl = document.getElementById(`tpl-${target}`);
       if (tpl) {
         gameFrame.removeAttribute("src");
@@ -766,12 +629,8 @@
       };
     }
 
-    // Read existing localStorage stats from the games to display on the Hub
     function refreshLocalStats() {
       try {
-        const playerName = localStorage.getItem("schulte_player_name") || "Guest";
-        document.getElementById("hubPlayerBadge").textContent = `👤 ${playerName}`;
-
         const schulteScores = JSON.parse(localStorage.getItem("schulte_local_scores") || "[]");
         const best5x5 = schulteScores
           .filter(s => s.grid_size === 5 && s.timer_mode === "stopwatch" && s.completed !== false)
@@ -792,24 +651,24 @@
       } catch (_) {}
     }
 
-    // Wire Card & Navbar Clicks
     document.querySelectorAll("[data-launch]").forEach(card => {
       card.addEventListener("click", () => switchView(card.dataset.launch));
     });
 
-    navPills.forEach(pill => {
-      pill.addEventListener("click", () => switchView(pill.dataset.target));
+    window.addEventListener("popstate", e => {
+      const target = (e.state && e.state.target) || location.hash.replace("#", "") || "home";
+      switchView(GAME_URLS[target] ? target : "home", "", false);
     });
 
-    document.getElementById("homeBrandBtn").addEventListener("click", () => switchView("home"));
-
-    // Forward ?g=CODE directly into Ultimate Chess online mode if present
     window.addEventListener("DOMContentLoaded", () => {
       refreshLocalStats();
       const params = new URLSearchParams(window.location.search);
       const chessCode = params.get("g");
       if (chessCode) {
-        switchView("chess", `?g=${encodeURIComponent(chessCode)}`);
+        switchView("chess", `?g=${encodeURIComponent(chessCode)}`, false);
+      } else {
+        const hashTarget = location.hash.replace("#", "");
+        if (GAME_URLS[hashTarget]) switchView(hashTarget, "", false);
       }
     });
   </script>
