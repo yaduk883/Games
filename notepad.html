@@ -50,6 +50,7 @@ input[type=color]{padding:0;width:30px;height:26px;cursor:pointer}
 ::selection{background:var(--sel)}
 footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px solid var(--bd);background:var(--bg2);color:var(--dim);font-size:11px;flex-wrap:wrap}
 #ed:empty::before{content:'start typing…';color:var(--dim)}
+.edw{position:relative;flex:1;min-height:0;display:flex}#ed{min-width:0}#inkCv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.inking #inkCv{cursor:crosshair}
 .app.noside{grid-template-columns:1fr}.app.noside aside:not(.open){display:none}.nobar #bar{display:none}.nostat footer{display:none}
 .mb{display:flex;gap:2px;flex-wrap:wrap}.mi{position:relative}.mb>.mi>button{border-color:transparent;background:none}.mb>.mi>button:hover{border-color:var(--ac)}
 .dd{display:none;position:absolute;top:100%;left:0;min-width:230px;background:var(--bg2);border:1px solid var(--bd);z-index:60;flex-direction:column;box-shadow:0 4px 14px rgba(0,0,0,.45)}
@@ -104,6 +105,7 @@ footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px so
    <button onclick="closeMenus();togBar()">Show / hide toolbar</button>
    <button onclick="closeMenus();togSide()">Show / hide sidebar</button>
    <button onclick="closeMenus();toggleTheme()">Dark / light theme</button>
+   <button onclick="closeMenus();toggleInk()">Ink (draw) mode on / off<span class="k">Esc exits</span></button>
   </div></div>
   <div class="mi"><button onclick="closeMenus();togglePanel('pSet')">Settings</button></div>
  </nav></header>
@@ -141,6 +143,12 @@ footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px so
     <option value="'Noto Sans Gurmukhi',monospace">Punjabi</option>
    </select>
    <button onclick="size(-1)">A−</button><button onclick="size(1)">A+</button>
+   <button id="inkBtn" onclick="toggleInk()" title="Draw on the page itself with mouse, pen or finger">✏ ink: off</button>
+   <span id="inkTools" style="display:none">
+    <button id="tpen" class="act" onclick="setTool('pen')">pen</button><button id="tmarker" onclick="setTool('marker')">marker</button><button id="teraser" onclick="setTool('eraser')">eraser</button>
+    <input type="color" id="inkCol" value="#ff5555" title="Ink colour"><input type="range" id="inkW" min="1" max="12" value="3" title="Pen size" style="width:80px">
+    <button onclick="inkUndo()">undo</button><button id="inkClr" onclick="inkClear()">clear ink</button>
+   </span>
    <select id="lang" title="Spell-check language"></select>
   </div>
 
@@ -171,13 +179,14 @@ footer{grid-column:1/-1;display:flex;gap:14px;padding:5px 12px;border-top:1px so
    <button onclick="saveCfg()">save settings</button><button onclick="openPanel()">close</button>
   </div>
   <input type="file" id="openIn" multiple accept=".txt,.html,.htm,.md,.markdown,.csv,.json,.log,text/*" style="display:none">
-  <div id="ed" contenteditable="true" spellcheck="true"></div>
+  <div class="edw" id="edw"><div id="ed" contenteditable="true" spellcheck="true"></div><canvas id="inkCv"></canvas></div>
  </main>
  <footer><span id="st">ready</span><span id="wc">0 words</span><span>Ctrl+S saves · Ctrl+F finds · Ctrl+click opens a link</span></footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
+/* NOTHING is kept in the browser: no localStorage, sessionStorage, IndexedDB or cookies. Everything lives in Supabase. */
 const URLB='https://hzmellvadxmlfvxlyolb.supabase.co',KEY='sb_publishable__ucEOIATPG3LAhGLgS0WVA_8v-4ZByq';
 const $=id=>document.getElementById(id),ed=$('ed'),aside=$('aside'),APP=$('app'),st=m=>$('st').textContent=m;
 let tok=null,rtok=null,uid=null,email='',rt=null,notes=[],cur=null,timer=null,dirty=false,saveQ=Promise.resolve(),delArm=0,rng=null,NM='',cfgT=null,fi=-1,spell=true,ac=true,fs=15;
@@ -187,20 +196,21 @@ const LANGS=[['en','English'],['hi','Hindi'],['mr','Marathi'],['ta','Tamil'],['t
 $('lang').innerHTML=LANGS.map(l=>`<option value="${l[0]}">${l[1]}</option>`).join('');
 const FIX={teh:'the',hte:'the',adn:'and',taht:'that',thsi:'this',yuo:'you',jsut:'just',recieve:'receive',becuase:'because',definately:'definitely',wich:'which',thier:'their',seperate:'separate',occured:'occurred',untill:'until',alot:'a lot',wierd:'weird',goverment:'government',tommorow:'tomorrow',accomodate:'accommodate',beleive:'believe',freind:'friend',adress:'address',dont:'don’t',cant:'can’t',wont:'won’t',doesnt:'doesn’t',didnt:'didn’t',im:'I’m',ive:'I’ve',i:'I'};
 
+/* ---------- Supabase ---------- */
 async function api(path,o={},retry=true){
  const h={apikey:KEY,'Content-Type':'application/json',...(o.headers||{})};if(tok&&!path.startsWith('/auth/'))h.Authorization='Bearer '+tok;
- let r;try{r=await fetch(URLB+path,{...o,headers:h})}catch(e){throw new Error('cannot reach Supabase.')}
+ let r;try{r=await fetch(URLB+path,{...o,headers:h})}catch(e){throw new Error('cannot reach Supabase. Check your internet, and open this file from your computer or your own website.')}
  if(r.status===401&&retry&&rtok&&!path.startsWith('/auth/')){await refresh();return api(path,o,false)}
  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
  if(!r.ok)throw new Error((j&&(j.message||j.msg||j.error_description||j.error))||t||('HTTP '+r.status));
  return j}
-function session(d){tok=d.access_token;rtok=d.refresh_token;uid=d.user.id;email=d.user.email||'';clearTimeout(rt);rt=setTimeout(()=>refresh().catch(()=>st('session expired')),Math.max(30,(d.expires_in||3600)-90)*1000)}
+function session(d){tok=d.access_token;rtok=d.refresh_token;uid=d.user.id;email=d.user.email||'';clearTimeout(rt);rt=setTimeout(()=>refresh().catch(()=>st('session expired: sign in again')),Math.max(30,(d.expires_in||3600)-90)*1000)}
 async function refresh(){session(await api('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:rtok})},false))}
 async function auth(kind){const em=$('lem').value.trim(),pw=$('lpw').value,m=$('lmsg');
- if(!em||pw.length<6){m.textContent='enter email and 6+ char password';return}
+ if(!em||pw.length<6){m.textContent='enter your email and a password of 6+ characters';return}
  m.textContent='working…';
  try{const d=await api(kind==='in'?'/auth/v1/token?grant_type=password':'/auth/v1/signup',{method:'POST',body:JSON.stringify({email:em,password:pw})});
-  if(!d.access_token){m.textContent='account created. Confirm email, then sign in.';return}
+  if(!d.access_token){m.textContent='account created. Confirm the email Supabase sent you, then sign in.';return}
   $('lpw').value='';session(d);await start()}catch(e){m.textContent=e.message}}
 function put(rows){saveQ=saveQ.catch(()=>{}).then(()=>api('/rest/v1/notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)}));return saveQ}
 const save1=n=>put([{id:n.id,data:n,t:n.t}]);
@@ -208,13 +218,14 @@ async function start(){
  try{const rows=await api('/rest/v1/notes?select=id,data&order=t.desc&limit=2000');
   notes=[];rows.forEach(r=>{if(r.id==='settings:'+uid)Object.assign(CFG,(r.data||{}).cfg||{});else if(r.data&&r.data.id)notes.push(r.data)});
   $('login').style.display='none';applyCfg();if(!notes.length)notes.push(mk());cur=notes[0];await show()}
- catch(e){$('login').style.display='flex';$('lmsg').textContent=e.message}}
+ catch(e){$('login').style.display='flex';$('lmsg').textContent=e.message+(/notes/.test(e.message)?' (run the SQL setup from the top of this file first)':'')}}
 function signOut(){tok=rtok=null;location.reload()}
 
+/* ---------- notes ---------- */
 const mk=()=>({id:'n'+(crypto.randomUUID?crypto.randomUUID():Date.now()+''+Math.random()),html:'',font:'',t:Date.now()});
 async function flush(force){if(!cur||!tok)return;clearTimeout(timer);const n=cur,h=ed.innerHTML;
  if(!force&&!dirty)return;
- if(n.locked){const k=KEYS[n.id];if(!k)return;await enc(n,h,k)}else n.html=h;
+ if(n.locked){const k=KEYS[n.id];if(!k)return;await enc(n,h,k,INK);delete n.ink}else{n.html=h;if(INK.length)n.ink=INK;else delete n.ink}
  n.t=Date.now();dirty=false;st('saving…');
  try{await save1(n);st('saved to Supabase ✓')}catch(e){dirty=true;st('SAVE FAILED: '+e.message)}renderList()}
 function changed(){dirty=true;st('typing…');count();clearTimeout(timer);timer=setTimeout(flush,CFG.auto)}
@@ -236,27 +247,28 @@ function clean(h){const d=new DOMParser().parseFromString(h,'text/html');
   if(k.startsWith('on')||k==='srcdoc'||k==='formaction'||(k==='href'&&!/^(https?:|mailto:|#)/i.test(v))||(k==='src'&&!/^data:image\/(png|jpe?g|gif|webp);/i.test(v))||(k==='style'&&/url\(|expression|javascript/i.test(v)))el.removeAttribute(a.name)});
   if(el.tagName==='A'){el.rel='noopener noreferrer';el.target='_blank'}});
  return d.body.innerHTML}
-async function show(){const n=cur;ed.style.fontFamily=n.font||'';
+async function show(){const n=cur;INK=!n.locked&&Array.isArray(n.ink)?JSON.parse(JSON.stringify(n.ink)):[];ed.style.fontFamily=n.font||'';
  if(n.locked&&!KEYS[n.id]){ed.innerHTML='';ed.contentEditable=false;$('pLock').dataset.mode='unlock';$('pw2').style.display='none';$('pwGo').textContent='unlock';$('pwMsg').textContent='';$('pw').value='';openPanel('pLock')}
  else{ed.contentEditable=true;try{ed.innerHTML=clean(n.locked?await dec(n,KEYS[n.id]):n.html)}catch(e){ed.innerHTML=''}if($('pLock').dataset.mode==='unlock')$('pLock').classList.remove('show')}
- renderList();count();st('ready')}
+ renderList();count();inkDraw();st('ready')}
 function newNote(){flush();cur=mk();notes.push(cur);dirty=false;show();ed.focus();aside.classList.remove('open')}
 async function delNote(){const n=cur;
  try{await api('/rest/v1/notes?id=eq.'+encodeURIComponent(n.id),{method:'DELETE'})}catch(e){st('delete failed: '+e.message);return}
  notes=notes.filter(x=>x!==n);delete KEYS[n.id];if(!notes.length)notes.push(mk());cur=notes[0];dirty=false;show()}
 let wipeArm=0;
-function wipe(){const b=$('wipeBtn');if(!wipeArm){wipeArm=1;b.textContent='sure? deletes all notes';setTimeout(()=>{wipeArm=0;b.textContent='erase all notes (from Supabase)'},3000);return}
+function wipe(){const b=$('wipeBtn');if(!wipeArm){wipeArm=1;b.textContent='sure? this deletes every note';setTimeout(()=>{wipeArm=0;b.textContent='erase all notes (from Supabase)'},3000);return}
  wipeArm=0;b.textContent='erase all notes (from Supabase)';
  api('/rest/v1/notes?id=not.like.settings:*',{method:'DELETE'}).then(()=>{for(const k in KEYS)delete KEYS[k];notes=[mk()];cur=notes[0];dirty=false;show();st('all notes erased')}).catch(e=>st('erase failed: '+e.message))}
 function rnGo(){const v=$('rnIn').value.trim();if(v)cur.name=v;else delete cur.name;cur.t=Date.now();save1(cur).then(()=>st('renamed ✓')).catch(e=>st('rename failed: '+e.message));renderList();openPanel()}
 
+/* ---------- settings (stored in Supabase) ---------- */
 function parseAC(){CUSTOM={};(CFG.ac||'').split('\n').forEach(l=>{const p=l.split('=');if(p[0]&&p[1])CUSTOM[p[0].trim().toLowerCase()]=p.slice(1).join('=').trim()})}
 function applyCfg(){spell=CFG.spell!==false;ac=CFG.acOn!==false;fs=CFG.fs||15;ed.style.fontSize=fs+'px';
  if(CFG.theme)document.documentElement.dataset.theme=CFG.theme;$('lang').value=CFG.lang||'en';setLang(true);
  APP.classList.toggle('nobar',!!CFG.bar);APP.classList.toggle('noside',!!CFG.side);APP.classList.toggle('nostat',CFG.stat===false);
  parseAC();$('cAuto').value=CFG.auto;$('cTab').value=CFG.tab;$('cStat').checked=CFG.stat!==false;$('cIdle').value=CFG.idle;$('cAC').value=CFG.ac||'';$('acct').textContent='signed in as '+email;applyFlags()}
 function pushCfg(){CFG.fs=fs;CFG.spell=spell;CFG.acOn=ac;CFG.lang=$('lang').value;CFG.bar=APP.classList.contains('nobar');CFG.side=APP.classList.contains('noside');CFG.theme=document.documentElement.dataset.theme||'';
- clearTimeout(cfgT);cfgT=setTimeout(()=>put([{id:'settings:'+uid,data:{cfg:CFG},t:Date.now()}]).catch(e=>st('settings not saved')),700)}
+ clearTimeout(cfgT);cfgT=setTimeout(()=>put([{id:'settings:'+uid,data:{cfg:CFG},t:Date.now()}]).catch(e=>st('settings not saved: '+e.message)),700)}
 function saveCfg(){CFG.auto=Math.max(200,+$('cAuto').value||600);CFG.tab=+$('cTab').value||2;CFG.stat=$('cStat').checked;CFG.idle=Math.max(0,+$('cIdle').value||0);CFG.ac=$('cAC').value;
  parseAC();APP.classList.toggle('nostat',!CFG.stat);pushCfg();st('settings saved ✓')}
 function applyFlags(){ed.spellcheck=spell;$('spBtn').textContent='Spell check: '+(spell?'ON':'OFF');$('acBtn').textContent='Auto-correct: '+(ac?'ON':'OFF')}
@@ -269,6 +281,7 @@ function size(d){fs=Math.min(40,Math.max(10,fs+d*2));ed.style.fontSize=fs+'px';p
 function togBar(){APP.classList.toggle('nobar');pushCfg()}
 function togSide(){if(matchMedia('(max-width:700px)').matches)aside.classList.toggle('open');else{APP.classList.toggle('noside');pushCfg()}}
 
+/* ---------- panels & formatting ---------- */
 const PANELS=['pLink','pTable','pBackup','pLock','pSet','pRename','pSaveAs','pFind'];
 function openPanel(id){PANELS.forEach(p=>$(p).classList.toggle('show',p===id));
  if(id==='pLink'){const s=rng?rng.toString():'';$('lt').value=s;$('lu').value='';$(s?'lu':'lt').focus()}}
@@ -277,21 +290,9 @@ document.addEventListener('selectionchange',()=>{const s=getSelection();if(s.ran
 function restoreSel(){ed.focus();if(rng){const s=getSelection();s.removeAllRanges();s.addRange(rng)}}
 function cmd(c,v){restoreSel();document.execCommand(c,false,v||null);changed()}
 function styled(c,v){restoreSel();document.execCommand('styleWithCSS',false,true);document.execCommand(c,false,v);document.execCommand('styleWithCSS',false,false);changed()}
-
-/* Single Highlight Toggle: applies colour if unhighlighted, removes highlight if already highlighted */
-function toggleHighlight(forceColor){
-  restoreSel();
-  const sel=getSelection();
-  if(!sel.rangeCount)return;
-  const parent=sel.anchorNode.parentElement;
-  const isHighlighted=parent&&parent.style&&parent.style.backgroundColor;
-  if(isHighlighted && !forceColor){
-    styled('hiliteColor','transparent');
-  }else{
-    styled('hiliteColor',$('hlc').value);
-  }
-}
-
+function toggleHighlight(forceColor){restoreSel();const sel=getSelection();if(!sel.rangeCount)return;
+ const par=sel.anchorNode.parentElement,on=par&&par.style&&par.style.backgroundColor;
+ if(on&&!forceColor)styled('hiliteColor','transparent');else styled('hiliteColor',$('hlc').value)}
 function textColor(){styled('foreColor',$('fgc').value)}
 $('bar').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
 document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>cmd(b.dataset.c));
@@ -301,7 +302,6 @@ function doLink(){let u=$('lu').value.trim(),t=$('lt').value.trim()||u;if(!u)ret
  const a=document.createElement('a');a.href=u;a.textContent=t;a.rel='noopener noreferrer';a.target='_blank';restoreSel();document.execCommand('insertHTML',false,a.outerHTML+'&nbsp;');openPanel();changed()}
 function doTable(){const r=Math.min(30,+$('tr').value||2),c=Math.min(12,+$('tc').value||2);let h='<table>';for(let i=0;i<r;i++){h+='<tr>';for(let j=0;j<c;j++)h+='<td><br></td>';h+='</tr>'}
  restoreSel();document.execCommand('insertHTML',false,h+'</table><p><br></p>');openPanel();changed()}
-
 ed.addEventListener('input',e=>{
  if(ac&&e.inputType==='insertText'&&e.data===' '){const s=getSelection(),n=s.anchorNode,o=s.anchorOffset;
   if(n&&n.nodeType===3){const m=n.textContent.slice(0,o).match(/(?:^|[^\p{L}\p{M}'’])([\p{L}\p{M}'’]+)[\s\u00a0]$/u);
@@ -309,13 +309,14 @@ ed.addEventListener('input',e=>{
     if(rep&&(w.toLowerCase()!=='i'||w==='i')){if(w.length>1&&w[0]===w[0].toUpperCase())rep=rep[0].toUpperCase()+rep.slice(1);
      const r=document.createRange();r.setStart(n,o-1-w.length);r.setEnd(n,o);s.removeAllRanges();s.addRange(r);document.execCommand('insertText',false,rep+' ')}}}}
  changed()});
-ed.addEventListener('paste',e=>{e.preventDefault();const cd=e.clipboardData||window.clipboardData;const html=cd.getData('text/html');if(html)document.execCommand('insertHTML',false,clean(html));else document.execCommand('insertText',false,cd.getData('text/plain'))});
+ed.addEventListener('paste',e=>{e.preventDefault();const cd=e.clipboardData||window.clipboardData,html=cd.getData('text/html');if(html)document.execCommand('insertHTML',false,clean(html));else document.execCommand('insertText',false,cd.getData('text/plain'))});
 ed.addEventListener('click',e=>{const a=e.target.closest('a');if(a&&(e.ctrlKey||e.metaKey))window.open(a.href,'_blank','noopener')});
 ed.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();document.execCommand('insertText',false,' '.repeat(CFG.tab))}});
 document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey))return;const k=e.key.toLowerCase();if(k==='s'){e.preventDefault();flush(true)}if(k==='f'){e.preventDefault();openFind(0)}});
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
 
+/* ---------- find / replace ---------- */
 function openFind(rep){openPanel('pFind');$('frRow').style.display=rep?'contents':'none';$('fq').focus();$('fq').select()}
 function fMatches(){const q=$('fq').value;if(!q)return[];const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),$('fcs').checked?'g':'gi'),out=[],w=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);let n,m;
  while(n=w.nextNode()){re.lastIndex=0;while((m=re.exec(n.data)))out.push([n,m.index,m[0].length])}return out}
@@ -324,12 +325,14 @@ function fGo(d){const a=fMatches();$('fcount').textContent=a.length+' matches';i
 function fRep(){const a=fMatches();if(!a.length)return;if(fi<0||fi>=a.length)fi=0;fSel(a[fi]);ed.focus();document.execCommand('insertText',false,$('frp').value);changed();fi--;fGo(1)}
 function fAll(){const a=fMatches();if(!a.length)return;ed.focus();const rp=$('frp').value;for(let i=a.length-1;i>=0;i--){fSel(a[i]);document.execCommand('insertText',false,rp)}changed();$('fcount').textContent='replaced '+a.length}
 
+/* ---------- password lock (PBKDF2 + AES-GCM, done before upload) ---------- */
 const b64=b=>{let s='';new Uint8Array(b).forEach(c=>s+=String.fromCharCode(c));return btoa(s)},unb=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 async function derive(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
-async function enc(n,html,k){const iv=crypto.getRandomValues(new Uint8Array(12));n.iv=b64(iv);n.ct=b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(html)));n.html=''}
-async function dec(n,k){return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb(n.iv)},k,unb(n.ct)))}
+async function enc(n,html,k,ink){const iv=crypto.getRandomValues(new Uint8Array(12));n.iv=b64(iv);n.ct=b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify({h:html,i:ink||[]}))));n.html=''}
+async function dec(n,k){const t=new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb(n.iv)},k,unb(n.ct)));
+ try{const o=JSON.parse(t);if(o&&typeof o.h==='string'){INK=o.i||[];return o.h}}catch(e){}INK=[];return t}
 function lockUI(){
- if(cur.locked&&KEYS[cur.id]){cur.locked=false;cur.html=ed.innerHTML;delete cur.ct;delete cur.iv;delete cur.salt;delete KEYS[cur.id];cur.t=Date.now();save1(cur).then(()=>st('lock removed ✓')).catch(e=>st('failed: '+e.message));renderList();return}
+ if(cur.locked&&KEYS[cur.id]){cur.locked=false;cur.html=ed.innerHTML;if(INK.length)cur.ink=INK;delete cur.ct;delete cur.iv;delete cur.salt;delete KEYS[cur.id];cur.t=Date.now();save1(cur).then(()=>st('lock removed ✓')).catch(e=>st('failed: '+e.message));renderList();return}
  if(cur.locked){show();return}
  $('pLock').dataset.mode='set';$('pw2').style.display='';$('pwGo').textContent='lock note';$('pw').value=$('pw2').value='';$('pwMsg').textContent='';openPanel('pLock');$('pw').focus()}
 async function lockGo(){const p=$('pw').value,m=$('pwMsg');
@@ -337,13 +340,14 @@ async function lockGo(){const p=$('pw').value,m=$('pwMsg');
   if(p.length<4){m.textContent='use at least 4 characters';return}
   if(p!==$('pw2').value){m.textContent='passwords do not match';return}
   const salt=crypto.getRandomValues(new Uint8Array(16)),k=await derive(p,salt);
-  cur.salt=b64(salt);cur.locked=true;KEYS[cur.id]=k;await enc(cur,ed.innerHTML,k);cur.t=Date.now();openPanel();renderList();
+  cur.salt=b64(salt);cur.locked=true;KEYS[cur.id]=k;await enc(cur,ed.innerHTML,k,INK);delete cur.ink;cur.t=Date.now();openPanel();renderList();
   try{await save1(cur);st('note locked and saved 🔒')}catch(e){st('SAVE FAILED: '+e.message)}}
- else{try{const k=await derive(p,unb(cur.salt)),h=await dec(cur,k);KEYS[cur.id]=k;ed.contentEditable=true;ed.innerHTML=clean(h);openPanel();count()}catch(e){m.textContent='wrong password'}}}
+ else{try{const k=await derive(p,unb(cur.salt)),h=await dec(cur,k);KEYS[cur.id]=k;ed.contentEditable=true;ed.innerHTML=clean(h);openPanel();count();inkDraw()}catch(e){m.textContent='wrong password'}}}
 async function relockAll(){await flush();for(const k in KEYS)delete KEYS[k];if(cur&&cur.locked)show();st('locked 🔒')}
 let lastAct=Date.now();['keydown','pointerdown','mousemove'].forEach(t=>document.addEventListener(t,()=>lastAct=Date.now(),{passive:true}));
 setInterval(()=>{if(CFG.idle>0&&Date.now()-lastAct>CFG.idle*60000&&Object.keys(KEYS).length)relockAll()},15000);
 
+/* ---------- menus ---------- */
 function closeMenus(){document.querySelectorAll('.dd.show').forEach(d=>d.classList.remove('show'))}
 function menu(b){const d=b.nextElementSibling,on=d.classList.contains('show');closeMenus();if(!on)d.classList.add('show')}
 document.addEventListener('click',e=>{if(!e.target.closest('.mi')&&!e.target.closest('.rm'))closeMenus()});
@@ -357,6 +361,7 @@ function rowMenu(btn){const n=cur;RM.innerHTML='';
  it('Delete',b=>{if(!delArm){delArm=1;b.textContent='Sure? click again';setTimeout(()=>delArm=0,3000);return}delArm=0;closeMenus();delNote()});
  const r=btn.getBoundingClientRect();RM.style.left=Math.max(4,Math.min(r.left,innerWidth-240))+'px';RM.style.top=r.bottom+'px';RM.classList.add('show')}
 
+/* ---------- open / export ---------- */
 function txtToHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').split(/\r?\n/).map(l=>'<div>'+(l||'<br>')+'</div>').join('')}
 function mdToHtml(t){const E=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
  const inl=s=>E(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/~~(.+?)~~/g,'<s>$1</s>').replace(/\[(.+?)\]\((https?:[^)\s]+)\)/g,'<a href="$2">$1</a>');
@@ -369,7 +374,7 @@ function mdToHtml(t){const E=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 async function openFile(f){if(f.size>2000000){st(f.name+' is over 2 MB');return}
  const t=await f.text(),x=f.name.split('.').pop().toLowerCase();
  const h=/^html?$/.test(x)?clean(t):/^(md|markdown)$/.test(x)?mdToHtml(t):txtToHtml(t);
- await flush();const n=mk();n.html=h;n.name=f.name;notes.push(n);cur=n;dirty=false;await show();try{await save1(n);st('opened '+f.name)}catch(e){st('SAVE FAILED: '+e.message)}}
+ await flush();const n=mk();n.html=h;n.name=f.name;notes.push(n);cur=n;dirty=false;await show();try{await save1(n);st('opened and saved '+f.name)}catch(e){st('SAVE FAILED: '+e.message)}}
 $('openIn').onchange=async e=>{for(const f of e.target.files)await openFile(f);e.target.value=''};
 ed.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files'))e.preventDefault()});
 ed.addEventListener('drop',async e=>{if(e.dataTransfer.files.length){e.preventDefault();for(const f of e.dataTransfer.files)await openFile(f)}});
@@ -377,7 +382,7 @@ function saveFile(name,data,type){const a=document.createElement('a'),u=URL.crea
 function fullHtml(){return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+title(cur).replace(/</g,'')+'</title><style>body{font-family:system-ui,"Noto Sans Devanagari",sans-serif;max-width:800px;margin:2em auto;line-height:1.6;color:#111}table{border-collapse:collapse}td{border:1px solid #888;padding:4px 8px}img{max-width:100%}</style></head><body>'+ed.innerHTML+'</body></html>'}
 function md(n){if(n.nodeType===3)return n.textContent.replace(/\u00a0/g,' ');if(n.nodeType!==1)return '';const k=()=>[...n.childNodes].map(md).join('');
  switch(n.tagName){case 'B':case 'STRONG':return '**'+k()+'**';case 'I':case 'EM':return '*'+k()+'*';case 'S':case 'STRIKE':return '~~'+k()+'~~';case 'U':return '<u>'+k()+'</u>';
- case 'A':return '['+k()+']('+n.getAttribute('href')+')';case 'BR':return '\n';case 'IMG':return '[image]';
+ case 'A':return '['+k()+']('+n.getAttribute('href')+')';case 'BR':return '\n';case 'IMG':return '[drawing]';
  case 'H1':return '# '+k()+'\n\n';case 'H2':return '## '+k()+'\n\n';case 'H3':return '### '+k()+'\n\n';
  case 'UL':return [...n.children].map(li=>'- '+md(li).trim()).join('\n')+'\n\n';
  case 'OL':return [...n.children].map((li,i)=>(i+1)+'. '+md(li).trim()).join('\n')+'\n\n';
@@ -404,7 +409,7 @@ async function toDocx(){if(!window.JSZip)throw new Error('Word library not loade
  return z.generateAsync({type:'blob'})}
 function printPdf(){try{const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);
  f.contentDocument.open();f.contentDocument.write(fullHtml());f.contentDocument.close();
- setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){st('print blocked')}},400)}catch(e){st('print blocked')}}
+ setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){st('print blocked: export .html and print it')}},400)}catch(e){st('print blocked: export .html and print it')}}
 async function exp(f){if(cur.locked&&!KEYS[cur.id])return;
  const base=(NM||title(cur).replace(/^🔒 /,'')).replace(/[\\/:*?"<>|]+/g,'').trim().slice(0,40)||'note';
  try{if(f==='txt')saveFile(base+'.txt',ed.innerText,'text/plain');
@@ -415,11 +420,44 @@ async function exp(f){if(cur.locked&&!KEYS[cur.id])return;
 function openSaveAs(){if(cur.locked&&!KEYS[cur.id])return;$('saName').value=title(cur).replace(/^🔒 /,'').replace(/[\\/:*?"<>|]+/g,'').slice(0,40);openPanel('pSaveAs');$('saName').select()}
 function saveAs(){NM=$('saName').value.replace(/\.(txt|md|docx|html)$/i,'').trim();exp($('saFmt').value);NM='';openPanel()}
 
+/* ---------- backup ---------- */
 function fillBackup(){flush();$('bk').value=JSON.stringify({app:'notepad',notes})}
 function copyBk(){$('bk').select();try{document.execCommand('copy');st('backup copied ✓')}catch(e){}}
 function restore(){try{const d=JSON.parse($('bk').value);if(!Array.isArray(d.notes))throw 0;let a=0;
- d.notes.forEach(n=>{if(n&&typeof n.html==='string'&&!notes.some(x=>x.id===n.id)){const m={...n,id:String(n.id||mk().id),t:n.t||Date.now()};notes.push(m);save1(m).catch(e=>st('SAVE FAILED'));a++}});
- renderList();st('restored '+a+' note(s)')}catch(e){st('invalid backup')}}
+ d.notes.forEach(n=>{if(n&&typeof n.html==='string'&&!notes.some(x=>x.id===n.id)){const m={...n,id:String(n.id||mk().id),t:n.t||Date.now()};notes.push(m);save1(m).catch(e=>st('SAVE FAILED: '+e.message));a++}});
+ renderList();st('restored '+a+' note(s)')}catch(e){st('that is not a valid backup')}}
+
+/* ---------- ink: draw on the page, in the same place you type ---------- */
+let INK=[],inkOn=false,itool='pen',cs=null,inkDirty=false,inkArm=0;
+const inkCv=$('inkCv'),ix=inkCv.getContext('2d');
+function setTool(t){itool=t;['pen','marker','eraser'].forEach(x=>$('t'+x).classList.toggle('act',x===t))}
+function inkSize(){const d=Math.min(devicePixelRatio||1,2),w=$('edw').clientWidth,h=$('edw').clientHeight;inkCv.width=w*d;inkCv.height=h*d;ix.setTransform(d,0,0,d,0,0);inkDraw()}
+function strokePath(s,sx,sy){const p=s.p;if(!p.length)return;ix.lineCap=ix.lineJoin='round';ix.strokeStyle=s.c;ix.globalAlpha=s.m?.35:1;ix.lineWidth=s.m?s.w*4:s.w;ix.beginPath();
+ ix.moveTo(p[0][0]-sx,p[0][1]-sy);
+ if(p.length===1)ix.lineTo(p[0][0]-sx+.01,p[0][1]-sy);
+ else{for(let i=1;i<p.length-1;i++)ix.quadraticCurveTo(p[i][0]-sx,p[i][1]-sy,(p[i][0]+p[i+1][0])/2-sx,(p[i][1]+p[i+1][1])/2-sy);const l=p[p.length-1];ix.lineTo(l[0]-sx,l[1]-sy)}
+ ix.stroke();ix.globalAlpha=1}
+function inkDraw(){ix.clearRect(0,0,inkCv.width,inkCv.height);INK.forEach(s=>strokePath(s,ed.scrollLeft,ed.scrollTop))}
+function ipos(e){const r=inkCv.getBoundingClientRect();return[+(e.clientX-r.left+ed.scrollLeft).toFixed(1),+(e.clientY-r.top+ed.scrollTop).toFixed(1)]}
+function near(s,q,r){const p=s.p;for(let i=0;i<p.length;i++){const a=p[i],b=p[i+1]||a,dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;let t=L?((q[0]-a[0])*dx+(q[1]-a[1])*dy)/L:0;t=Math.max(0,Math.min(1,t));if(Math.hypot(a[0]+t*dx-q[0],a[1]+t*dy-q[1])<r)return true}return false}
+function eraseAt(q){const n=INK.length;INK=INK.filter(s=>!near(s,q,10+s.w));if(INK.length!==n){inkDirty=true;inkDraw()}}
+inkCv.addEventListener('pointerdown',e=>{if(!inkOn)return;e.preventDefault();inkCv.setPointerCapture(e.pointerId);const q=ipos(e);
+ if(itool==='eraser'){cs='erase';eraseAt(q);return}
+ cs={c:$('inkCol').value,w:+$('inkW').value,m:itool==='marker'?1:0,p:[q]};INK.push(cs);inkDraw()});
+inkCv.addEventListener('pointermove',e=>{if(!cs)return;const q=ipos(e);if(cs==='erase'){eraseAt(q);return}
+ const l=cs.p[cs.p.length-1];if(Math.hypot(q[0]-l[0],q[1]-l[1])<1.5)return;cs.p.push(q);inkDraw()});
+['pointerup','pointercancel'].forEach(t=>inkCv.addEventListener(t,()=>{if(cs&&(cs!=='erase'||inkDirty))changed();cs=null;inkDirty=false}));
+inkCv.addEventListener('wheel',e=>{ed.scrollBy(e.deltaX,e.deltaY);e.preventDefault()},{passive:false});
+ed.addEventListener('scroll',inkDraw);
+new ResizeObserver(inkSize).observe($('edw'));
+function toggleInk(){if(cur&&cur.locked&&!KEYS[cur.id])return;inkOn=!inkOn;inkCv.style.pointerEvents=inkOn?'auto':'none';inkCv.style.touchAction=inkOn?'none':'auto';
+ $('edw').classList.toggle('inking',inkOn);$('inkBtn').textContent=inkOn?'✏ ink: ON':'✏ ink: off';$('inkBtn').classList.toggle('act',inkOn);$('inkTools').style.display=inkOn?'contents':'none';
+ st(inkOn?'ink mode: draw anywhere on the page. Esc to go back to typing':'typing mode')}
+function inkUndo(){if(INK.length){INK.pop();inkDraw();changed()}}
+function inkClear(){const b=$('inkClr');if(!inkArm){inkArm=1;b.textContent='sure?';setTimeout(()=>{inkArm=0;b.textContent='clear ink'},3000);return}
+ inkArm=0;b.textContent='clear ink';INK=[];inkDraw();changed()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&inkOn)toggleInk()});
+inkSize();
 </script>
 </body>
 </html>
